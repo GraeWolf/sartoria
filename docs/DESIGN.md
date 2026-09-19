@@ -37,7 +37,7 @@ The name is Italian for tailoring: one cut, not a kit.
 | ISO | Installer-first, like Omarchy; not a live desktop |
 | ISO contents | Offline: everything needed to install is on the image |
 | Disk (v0.1) | Whole-disk wipe, ext4, no encryption |
-| Session start | Console login, then auto-`startx` on tty1. No display manager |
+| Session start | Console login on tty1, then **manual `startx`**. Auto-startx is off so a failed X (hybrid GPU) does not log you out. No display manager |
 | Desktop stack | alacritty, polybar, rofi, dunst, picom |
 | v0.1 apps | Session minimum only (no browser, office, or file manager) |
 | Packaging | apt/dpkg, `sartoria-desktop` metapackage |
@@ -100,9 +100,9 @@ USB ISO (installer-first, offline)
         ├─ partitions one disk: GPT + ESP + ext4 root (UEFI)
         ├─ copies the offline pool + sartoria-desktop
         ├─ NVIDIA detect → skip on virtio/QXL; stub proprietary path
-        └─ GRUB, sysvinit, auto-startx on tty1
+        └─ GRUB, sysvinit, console login (manual startx)
 Installed system
-  └─ login on tty1 → ~/.bash_profile → startx → herbstluftwm on XLibre
+  └─ login on tty1 → shell → startx → herbstluftwm on XLibre
 ```
 
 The USB is not a daily-driver live session. The desktop exists after the target reboots.
@@ -114,7 +114,7 @@ The USB is not a daily-driver live session. The desktop exists after the target 
 ### Session
 
 - No LightDM/GDM/SDDM.
-- After a **local tty1** login, `.bash_profile` execs `startx` when `DISPLAY` is unset.
+- After a **local tty1** login you get a shell. Run `startx` for herbstluftwm. `.bash_profile` does **not** exec startx (a failed X session would replace the login shell and dump you back at getty).
 - SSH and other ttys must not start X.
 - `.xinitrc` launches herbstluftwm (and the autostart that starts polybar, picom, dunst).
 

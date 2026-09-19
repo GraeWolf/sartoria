@@ -8,7 +8,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 2. Boot it. GRUB: **Install Sartoria**.
 3. Use the **graphical/VGA console**, not serial and not SSH. The TUI is on tty1.
 4. TUI asks keyboard, hostname, user, password, **which disk to wipe**, and a YES confirm. Other disks (for example Windows) are not touched. Do not pick the Windows drive.
-5. Reboot without the USB/ISO. Log in on tty1; `startx` runs on that VT only.
+5. Reboot without the USB/ISO. Log in on tty1. Auto-startx is **off** so a failed X session does not log you out. Run `startx` when you want the desktop.
 
 
 ## Principles
@@ -35,7 +35,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 
 1. Boot.
 2. Log in on tty1 with the user created at install time.
-3. `startx` runs automatically on tty1 only.
+3. You get a shell. Run `startx` for herbstluftwm. If X fails you stay logged in; check `~/.local/share/xorg/Xorg.0.log` or `/var/log/Xorg.0.log`.
 4. Super+Return (or **Alt+Return** if Super is eaten by the host) opens a terminal. Super+Space / Alt+Space opens the launcher.
 
 SSH sessions and other VTs do not start X.

@@ -1,6 +1,2 @@
-# SARTORIA_AUTO_STARTX
-# Local tty1 only. SSH and other VTs must not start X.
-# Full login file is bash_profile (sources ~/.profile first).
-if [ -z "$DISPLAY" ] && [ "$(tty 2>/dev/null)" = "/dev/tty1" ]; then
-  exec startx
-fi
+# Auto-startx disabled. From tty1 after login, run: startx
+# Do not exec startx from here: a failed X session would log you out.

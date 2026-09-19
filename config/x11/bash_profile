@@ -1,7 +1,8 @@
-# Login shell. Source .profile (PATH, umask) then auto-startx on tty1 only.
+# Login shell. Source .profile (PATH, umask).
+# Auto-startx is off: hybrid graphics / XLibre failures were logging
+# the user straight back out (exec startx replaces the shell).
 [ -f "$HOME/.profile" ] && . "$HOME/.profile"
 
-# SARTORIA_AUTO_STARTX
-if [ -z "$DISPLAY" ] && [ "$(tty 2>/dev/null)" = "/dev/tty1" ]; then
-  exec startx
-fi
+# To start the desktop from tty1 after login:
+#   startx
+# Logs: ~/.local/share/xorg/Xorg.0.log  or  /var/log/Xorg.0.log
