@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # v0.1 CLI: status, help, version. No update wrapper, no AI.
 set -euo pipefail
-VERSION="0.0.0-phase-a"
+VERSION="0.0.0-phase-b"
 
 cmd_help() {
   cat <<'EOF'
@@ -18,34 +18,45 @@ cmd_version() {
   echo "sartoria $VERSION"
 }
 
+running() {
+  pgrep -u "$(id -u)" -x "$1" >/dev/null 2>&1
+}
+
 cmd_status() {
-  local comm init disp session nvidia
+  local comm init disp session nvidia extras
   comm="$(cat /proc/1/comm 2>/dev/null || echo unknown)"
   init="$(readlink -f /sbin/init 2>/dev/null || echo unknown)"
   disp="none"
-  if command -v xdpyinfo >/dev/null 2>&1 && xdpyinfo >/dev/null 2>&1; then
-    disp="$(xdpyinfo 2>/dev/null | awk -F': ' '/^vendor string/ {print $2; exit}')"
-    if command -v Xorg >/dev/null 2>&1; then
-      disp="$(Xorg -version 2>&1 | head -n 3 | tr '\n' ' ')"
-    fi
-  elif command -v Xorg >/dev/null 2>&1; then
-    disp="$(Xorg -version 2>&1 | head -n 3 | tr '\n' ' ')"
+  if command -v xdpyinfo >/dev/null 2>&1 && DISPLAY="${DISPLAY:-:0}" xdpyinfo >/dev/null 2>&1; then
+    disp="$(DISPLAY="${DISPLAY:-:0}" xdpyinfo 2>/dev/null | awk -F': ' '/^vendor string/ {print $2; exit}')"
+  fi
+  if command -v Xorg >/dev/null 2>&1; then
+    disp="${disp} / $(Xorg -version 2>&1 | awk 'NR==1 {print; exit}')"
   fi
   session="${XDG_SESSION_DESKTOP:-${DESKTOP_SESSION:-none}}"
   if command -v herbstclient >/dev/null 2>&1 && herbstclient version >/dev/null 2>&1; then
-    session="herbstluftwm $(herbstclient version 2>/dev/null | head -n1)"
+    session="herbstluftwm $(herbstclient version 2>/dev/null | awk 'NR==1 {print; exit}')"
   fi
   nvidia="skipped (no NVIDIA device or not probed)"
   if [ -e /proc/driver/nvidia/version ]; then
     nvidia="$(head -n1 /proc/driver/nvidia/version)"
-  elif lsmod | grep -q '^nvidia'; then
+  elif lsmod 2>/dev/null | grep -q '^nvidia'; then
     nvidia="nvidia module loaded"
   fi
+  extras=""
+  for p in polybar picom dunst pipewire; do
+    if running "$p"; then
+      extras="${extras} ${p}=up"
+    else
+      extras="${extras} ${p}=down"
+    fi
+  done
   cat <<EOF
 sartoria $VERSION
 init:     $comm ($init)
 display:  $disp
 session:  $session
+helpers: ${extras# }
 nvidia:   $nvidia
 EOF
 }

@@ -1,6 +1,6 @@
 # Sartoria manual
 
-This is page one. The desktop does not exist until Phase B; the ISO does not exist until Phase D. Keep this file honest.
+This is page one. The lab VM has a Phase B session. The ISO does not exist until Phase D. Keep this file honest.
 
 ## Principles
 
@@ -56,6 +56,21 @@ Stay on `excalibur` + backports + the pinned extra repos. Do not add Freia or Ce
 
 XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is allowed **on the lab machine** while debugging. Sartoria still ships XLibre.
 
-## Bindings (target)
+## Bindings
 
-See `docs/DESIGN.md` §4. Super+Return terminal, Super+Space rofi, Super+h/j/k/l focus, Super+o / Super+u split, Super+1..9 tags.
+Super is the modkey (Windows key).
+
+| Key | Action |
+| --- | --- |
+| Super+Return | terminal (alacritty) |
+| Super+Space | launcher (rofi) |
+| Super+q | close window |
+| Super+Shift+e | exit session |
+| Super+1..9 | use tag |
+| Super+Shift+1..9 | move window to tag |
+| Super+h/j/k/l | focus |
+| Super+Shift+h/j/k/l | move window |
+| Super+o / Super+u | split right / split down |
+| Super+s | toggle floating |
+
+herbstluftwm is **manual** tiling: you split frames. It will not auto-tile like Hyprland.

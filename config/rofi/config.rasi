@@ -3,20 +3,45 @@ configuration {
   show-icons: false;
   font: "JetBrainsMono Nerd Font 12";
   kb-cancel: "Escape,Super+space";
+  drun-display-format: "{name}";
 }
+
 * {
   background: #1a1b26;
   foreground: #c0caf5;
   accent: #7aa2f7;
+  background-color: @background;
+  text-color: @foreground;
 }
+
 window {
   background-color: @background;
   border: 2px;
   border-color: @accent;
   padding: 8px;
+  width: 32em;
 }
-listview { lines: 8; }
+
+listview {
+  lines: 8;
+  scrollbar: false;
+}
+
 element selected {
   background-color: @accent;
   text-color: @background;
+}
+
+inputbar {
+  padding: 4px;
+  children: [ prompt, entry ];
+}
+
+prompt {
+  text-color: @accent;
+  padding: 0px 8px 0px 0px;
+}
+
+entry {
+  text-color: @foreground;
 }

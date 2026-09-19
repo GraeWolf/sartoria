@@ -8,6 +8,7 @@ hc mouseunbind --all
 hc unrule -F
 
 Mod=Mod4
+TERMINAL="${TERMINAL:-alacritty}"
 
 hc set default_frame_layout horizontal
 hc set auto_detect_monitors on
@@ -19,7 +20,6 @@ hc set window_gap 4
 hc set frame_padding 0
 hc set smart_window_surroundings off
 hc set smart_frame_surroundings on
-hc set mouse_recenter_ignore_sloppy off
 
 # Tokyo Night-class (cool-neutral dark)
 hc set frame_border_active_color '#7aa2f7'
@@ -31,10 +31,13 @@ hc set frame_bg_normal_color '#16161e'
 hc set frame_bg_transparent on
 hc set frame_transparent_width 0
 
+command -v xsetroot >/dev/null && xsetroot -solid '#1a1b26'
+
+hc keybind $Mod-Shift-e quit
 hc keybind $Mod-Shift-q quit
 hc keybind $Mod-Shift-r reload
 hc keybind $Mod-q close
-hc keybind $Mod-Return spawn "${TERMINAL:-alacritty}"
+hc keybind $Mod-Return spawn "$TERMINAL"
 hc keybind $Mod-space spawn rofi -show drun
 
 hc keybind $Mod-h focus left
@@ -59,7 +62,7 @@ tag_names=( {1..9} )
 tag_keys=( {1..9} )
 hc rename default "${tag_names[0]}" || true
 for i in "${!tag_names[@]}"; do
-  hc add "${tag_names[$i]}"
+  hc add "${tag_names[$i]}" || true
   key="${tag_keys[$i]}"
   hc keybind "$Mod-$key" use_index "$i"
   hc keybind "$Mod-Shift-$key" move_index "$i"
@@ -74,17 +77,28 @@ hc rule windowtype~'_NET_WM_WINDOW_TYPE_(DIALOG|UTILITY|SPLASH)' floating=on
 hc rule windowtype='_NET_WM_WINDOW_TYPE_DIALOG' focus=on
 hc rule windowtype~'_NET_WM_WINDOW_TYPE_(NOTIFICATION|DOCK|DESKTOP)' manage=off
 hc rule class=Alacritty focus=on
+hc rule class=Rofi manage=off
+hc rule class=dunst manage=off
 
 hc unlock
 
-# Panel and helpers — ignore failures on a stock A4 session
-polybar-msg cmd quit >/dev/null 2>&1 || true
+# PipeWire is a user session on sysvinit (no systemd --user).
+if command -v pipewire >/dev/null 2>&1; then
+  pgrep -u "$USER" -x pipewire >/dev/null || pipewire &
+  pgrep -u "$USER" -x pipewire-pulse >/dev/null || pipewire-pulse &
+  pgrep -u "$USER" -x wireplumber >/dev/null || wireplumber &
+fi
+
+pkill -u "$USER" -x polybar >/dev/null 2>&1 || true
 if command -v polybar >/dev/null 2>&1; then
+  sleep 0.2
   polybar sartoria >/dev/null 2>&1 &
 fi
 if command -v picom >/dev/null 2>&1; then
-  picom --daemon >/dev/null 2>&1 || true
+  pkill -u "$USER" -x picom >/dev/null 2>&1 || true
+  picom -b >/dev/null 2>&1 || picom --daemon >/dev/null 2>&1 || true
 fi
 if command -v dunst >/dev/null 2>&1; then
+  pkill -u "$USER" -x dunst >/dev/null 2>&1 || true
   dunst >/dev/null 2>&1 &
 fi

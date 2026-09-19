@@ -6,7 +6,8 @@ This directory holds the **lab** Devuan Excalibur VM. It is not the Sartoria ins
 
 - Devuan 6 Excalibur boots in QEMU with virtio
 - PID 1 is sysvinit
-- Later: herbstluftwm on Xorg, then on XLibre
+- herbstluftwm on Xorg, then on XLibre (Phase A)
+- Opinionated session: polybar, rofi, dunst, picom, alacritty (Phase B)
 
 ## Firmware
 
@@ -33,6 +34,7 @@ Weak password is intentional for a disposable VM.
 ./scripts/lab-run.sh        # boot the disk (VNC 127.0.0.1:5901, SSH :2222)
 ./scripts/lab-verify.sh     # A3: PID 1 + two reboots
 ./scripts/lab-ssh.sh
+./scripts/lab-phase-b.sh    # desktop stack on the same VM
 ```
 
 Images and ISOs are gitignored.

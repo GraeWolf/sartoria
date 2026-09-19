@@ -173,7 +173,7 @@ Lab bootstrap notes:
 
 Autostart, polybar, rofi, dunst, picom, one theme, `sartoria` CLI stub.
 
-**Exit B:** You would use this VM for an hour of real work (terminal + tiling; browser is still later).
+**Exit B:** You would use this VM for an hour of real work (terminal + tiling; browser is still later). Done 2026-09-19; see `lab/PHASE-B.md`.
 
 ### Phase C — Metapackages
 
