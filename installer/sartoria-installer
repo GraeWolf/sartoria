@@ -127,7 +127,7 @@ squashfs_path() {
 }
 
 target_disk() {
-  local live_src live_disk name type
+  local live_src live_disk name type size tran best="" best_size=0
   live_src="$(live_medium || true)"
   live_disk=""
   if [[ -n "$live_src" ]]; then
@@ -136,13 +136,21 @@ target_disk() {
       live_disk="$(basename "$live_src" | sed 's/[0-9][0-9]*$//')"
     fi
   fi
-  while read -r name type; do
+  # NAME TYPE SIZE_BYTES TRAN — skip floppy (fd0), CD, ram, and anything under 1G.
+  while read -r name type size tran; do
     [[ "$type" == disk ]] || continue
-    [[ "$name" == sr* || "$name" == loop* || "$name" == ram* || "$name" == zram* ]] && continue
+    [[ "$name" == fd* || "$name" == sr* || "$name" == loop* || "$name" == ram* || "$name" == zram* || "$name" == md* ]] && continue
+    [[ "$tran" == "floppy" ]] && continue
     [[ -n "$live_disk" && "$name" == "$live_disk" ]] && continue
-    echo "/dev/$name"
-    return 0
-  done < <(lsblk -dn -o NAME,TYPE)
+    [[ "$size" =~ ^[0-9]+$ ]] || continue
+    [[ "$size" -ge 1073741824 ]] || continue
+    if [[ "$size" -gt "$best_size" ]]; then
+      best="$name"
+      best_size="$size"
+    fi
+  done < <(lsblk -dn -b -o NAME,TYPE,SIZE,TRAN)
+  [[ -n "$best" ]] || return 1
+  echo "/dev/$best"
 }
 
 nvidia_note() {
@@ -171,8 +179,8 @@ PASS2="$(ask_password "Password" "Password again")"
 [[ "$PASS1" == "$PASS2" ]] || die "passwords do not match"
 [[ -n "$PASS1" ]] || die "empty password"
 
-DISK="$(target_disk)"
-[[ -b "$DISK" ]] || die "no target disk found"
+DISK="$(target_disk || true)"
+[[ -b "$DISK" ]] || die "No install disk found. Attach a virtual hard disk (>= 1G). Floppy (/dev/fd0) and CD-ROM are ignored."
 log "target disk: $DISK"
 confirm_wipe "$DISK"
 if [[ "$AUTO" -eq 0 ]]; then
