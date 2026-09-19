@@ -1,0 +1,27 @@
+Source: sartoria-desktop
+Section: metapackages
+Priority: optional
+Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/kmccuddy/sartoria
+
+Package: sartoria-desktop
+Architecture: all
+Depends: herbstluftwm,
+         xinit,
+         alacritty,
+         polybar,
+         rofi,
+         dunst,
+         picom,
+         neovim,
+         fonts-jetbrains-mono,
+         network-manager,
+         sudo,
+         ${misc:Depends}
+Recommends: xlibre | xorg
+Description: Sartoria desktop metapackage
+ Keyboard-first herbstluftwm session for Sartoria (Devuan remix).
+ XLibre is the shipped display server; xorg is listed only as a
+ development rescue alternative, not a product session.

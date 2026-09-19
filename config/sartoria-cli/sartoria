@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# v0.1 CLI: status, help, version. No update wrapper, no AI.
+set -euo pipefail
+VERSION="0.0.0-phase-a"
+
+cmd_help() {
+  cat <<'EOF'
+sartoria — Sartoria system helper
+
+Usage:
+  sartoria status
+  sartoria version
+  sartoria help
+EOF
+}
+
+cmd_version() {
+  echo "sartoria $VERSION"
+}
+
+cmd_status() {
+  local comm init disp session nvidia
+  comm="$(cat /proc/1/comm 2>/dev/null || echo unknown)"
+  init="$(readlink -f /sbin/init 2>/dev/null || echo unknown)"
+  disp="none"
+  if command -v xdpyinfo >/dev/null 2>&1 && xdpyinfo >/dev/null 2>&1; then
+    disp="$(xdpyinfo 2>/dev/null | awk -F': ' '/^vendor string/ {print $2; exit}')"
+    if command -v Xorg >/dev/null 2>&1; then
+      disp="$(Xorg -version 2>&1 | head -n 3 | tr '\n' ' ')"
+    fi
+  elif command -v Xorg >/dev/null 2>&1; then
+    disp="$(Xorg -version 2>&1 | head -n 3 | tr '\n' ' ')"
+  fi
+  session="${XDG_SESSION_DESKTOP:-${DESKTOP_SESSION:-none}}"
+  if command -v herbstclient >/dev/null 2>&1 && herbstclient version >/dev/null 2>&1; then
+    session="herbstluftwm $(herbstclient version 2>/dev/null | head -n1)"
+  fi
+  nvidia="skipped (no NVIDIA device or not probed)"
+  if [ -e /proc/driver/nvidia/version ]; then
+    nvidia="$(head -n1 /proc/driver/nvidia/version)"
+  elif lsmod | grep -q '^nvidia'; then
+    nvidia="nvidia module loaded"
+  fi
+  cat <<EOF
+sartoria $VERSION
+init:     $comm ($init)
+display:  $disp
+session:  $session
+nvidia:   $nvidia
+EOF
+}
+
+case "${1:-help}" in
+  status) cmd_status ;;
+  version|--version|-V) cmd_version ;;
+  help|--help|-h|"") cmd_help ;;
+  *)
+    echo "unknown command: $1" >&2
+    cmd_help >&2
+    exit 2
+    ;;
+esac

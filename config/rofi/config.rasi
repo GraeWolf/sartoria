@@ -1,0 +1,22 @@
+configuration {
+  modi: "drun,run";
+  show-icons: false;
+  font: "JetBrainsMono Nerd Font 12";
+  kb-cancel: "Escape,Super+space";
+}
+* {
+  background: #1a1b26;
+  foreground: #c0caf5;
+  accent: #7aa2f7;
+}
+window {
+  background-color: @background;
+  border: 2px;
+  border-color: @accent;
+  padding: 8px;
+}
+listview { lines: 8; }
+element selected {
+  background-color: @accent;
+  text-color: @background;
+}

@@ -1,0 +1,5 @@
+# SARTORIA_AUTO_STARTX
+# Local tty1 only. SSH and other VTs must not start X.
+if [ -z "$DISPLAY" ] && [ "$(tty 2>/dev/null)" = "/dev/tty1" ]; then
+  exec startx
+fi

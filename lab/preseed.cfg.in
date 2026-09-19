@@ -1,0 +1,80 @@
+#_preseed_V1
+# Sartoria Phase A lab — Devuan 6 Excalibur.
+# Injected as /preseed.cfg in the debian-installer initrd.
+# Not the product TUI installer.
+
+d-i debian-installer/locale string en_US.UTF-8
+d-i debian-installer/language string en
+d-i debian-installer/country string US
+d-i localechooser/supported-locales multiselect en_US.UTF-8
+d-i keyboard-configuration/xkb-keymap select us
+d-i keymap select us
+
+d-i hw-detect/load_firmware boolean true
+d-i netcfg/choose_interface select auto
+d-i netcfg/use_autoconfig boolean true
+d-i netcfg/get_hostname string sartoria-lab
+d-i netcfg/hostname string sartoria-lab
+d-i netcfg/get_domain string local
+d-i netcfg/wireless_wep string
+
+d-i mirror/country string manual
+d-i mirror/protocol string http
+d-i mirror/http/hostname string deb.devuan.org
+d-i mirror/http/directory string /merged
+d-i mirror/http/proxy string
+d-i mirror/suite string excalibur
+d-i mirror/udeb/suite string excalibur
+
+d-i passwd/root-login boolean false
+d-i passwd/make-user boolean true
+d-i passwd/user-fullname string Sartoria Lab
+d-i passwd/username string sartoria
+d-i passwd/user-password password sartoria
+d-i passwd/user-password-again password sartoria
+d-i user-setup/allow-password-weak boolean true
+d-i user-setup/encrypt-home boolean false
+
+d-i clock-setup/utc boolean true
+d-i time/zone string UTC
+d-i clock-setup/ntp boolean true
+
+d-i partman/early_command string debconf-set partman-auto/disk "$(list-devices disk | head -n1)"
+d-i partman-auto/method string regular
+d-i partman-auto/choose_recipe select atomic
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-efi/non_efi_system boolean true
+
+d-i base-installer/kernel/image string linux-image-amd64
+d-i base-installer/install-recommends boolean true
+
+d-i apt-setup/use_mirror boolean true
+d-i apt-setup/non-free boolean true
+d-i apt-setup/contrib boolean true
+d-i apt-setup/non-free-firmware boolean true
+d-i apt-setup/disable-cdrom-entries boolean true
+d-i apt-setup/enable-source-repositories boolean false
+d-i apt-setup/services-select multiselect security, updates, backports
+
+choose-init choose-init/select_init select sysvinit
+d-i choose-init/select_init select sysvinit
+
+tasksel tasksel/first multiselect standard, ssh-server
+d-i pkgsel/include string openssh-server sudo ca-certificates curl gnupg
+d-i pkgsel/upgrade select full-upgrade
+d-i pkgsel/update-policy select none
+popularity-contest popularity-contest/participate boolean false
+
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean false
+d-i grub-installer/bootdev string default
+
+d-i finish-install/reboot_in_progress note
+
+d-i preseed/late_command string \
+  in-target sh -c 'install -d -m 700 -o sartoria -g sartoria /home/sartoria/.ssh; printf "%s\n" "@SSH_PUBKEY@" > /home/sartoria/.ssh/authorized_keys; chown sartoria:sartoria /home/sartoria/.ssh/authorized_keys; chmod 600 /home/sartoria/.ssh/authorized_keys; grep -q "^T0:" /etc/inittab || echo "T0:23:respawn:/sbin/getty -L ttyS0 115200 vt100" >> /etc/inittab; echo "sartoria ALL=(ALL) ALL" > /etc/sudoers.d/010-sartoria; chmod 440 /etc/sudoers.d/010-sartoria'

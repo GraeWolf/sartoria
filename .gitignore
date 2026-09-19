@@ -1,0 +1,11 @@
+/lab/iso/
+/lab/images/
+/lab/cache/
+/lab/ssh/
+/lab/*.log
+/lab/*.pid
+/lab/preseed.cfg
+*.qcow2
+*.iso
+*~
+.DS_Store
