@@ -4,7 +4,7 @@ A personal opinionated Linux distribution. Devuan remix, own ISO, keyboard-first
 
 Sartoria is omakase: finished defaults, no account to install or boot. It is not Arch, not systemd, not Hyprland, not Wayland, and not a post-install gist.
 
-**Status:** Phase C complete (`sartoria-desktop` on a fresh Devuan VM). There is no installable Sartoria ISO yet (Phase D).
+**Status:** Phase D complete — v0.1 ISO. Installer-first Devuan remix, TUI installer, herbstluftwm on XLibre.
 
 Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.md`](MANUAL.md).
 
@@ -41,6 +41,9 @@ On this machine, with QEMU/KVM:
 ./scripts/build-sartoria-desktop.sh
 LAB_NAME=sartoria-c ./scripts/lab-install.sh
 LAB_NAME=sartoria-c ./scripts/lab-phase-c.sh
+BUILD_VARIANT=test ./scripts/lab-build-iso.sh
+./scripts/test-iso.sh
+
 
 
 ```

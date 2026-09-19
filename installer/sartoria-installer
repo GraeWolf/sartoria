@@ -1,0 +1,237 @@
+#!/bin/bash
+# Sartoria TUI installer. Whole-disk wipe, ext4, no LUKS. Not Calamares.
+set -euo pipefail
+
+LOG=/var/log/sartoria-installer.log
+mkdir -p "$(dirname "$LOG")"
+
+AUTO=0
+[[ "${1:-}" == "--auto" ]] && AUTO=1
+grep -qw sartoria.auto /proc/cmdline 2>/dev/null && AUTO=1
+[[ -f /sartoria-auto ]] && AUTO=1
+
+log() {
+  printf 'sartoria-installer: %s\n' "$*" | tee -a "$LOG"
+  if [[ -w /dev/ttyS0 ]]; then
+    printf 'sartoria-installer: %s\n' "$*" >/dev/ttyS0 2>/dev/null || true
+  fi
+}
+die() { log "ERROR: $*"; exit 1; }
+
+ask() {
+  local title="$1" text="$2" default="${3:-}"
+  if [[ "$AUTO" -eq 1 ]]; then
+    printf '%s\n' "$default"
+    return
+  fi
+  dialog --stdout --title "$title" --inputbox "$text" 10 60 "$default"
+}
+
+ask_password() {
+  local title="$1" text="$2"
+  if [[ "$AUTO" -eq 1 ]]; then
+    printf '%s\n' "sartoria"
+    return
+  fi
+  dialog --stdout --title "$title" --insecure --passwordbox "$text" 10 60
+}
+
+yes_wipe() {
+  local disk="$1"
+  if [[ "$AUTO" -eq 1 ]]; then
+    return 0
+  fi
+  dialog --title "Wipe disk" --yesno "ALL DATA on ${disk} will be destroyed.\n\nGPT + 512M EFI + ext4 root. No encryption.\n\nType-level confirm: select Yes to wipe." 12 60
+}
+
+live_medium() {
+  local src
+  for p in /run/live/medium /lib/live/mount/medium /run/live/fromiso; do
+    if [[ -d "$p" ]]; then
+      src="$(findmnt -n -o SOURCE --target "$p" 2>/dev/null || true)"
+      printf '%s\n' "$src"
+      return
+    fi
+  done
+}
+
+squashfs_path() {
+  local p
+  for p in \
+    /run/live/medium/live/filesystem.squashfs \
+    /lib/live/mount/medium/live/filesystem.squashfs \
+    /live/filesystem.squashfs; do
+    [[ -f "$p" ]] && { printf '%s\n' "$p"; return; }
+  done
+  die "cannot find filesystem.squashfs on the live medium"
+}
+
+target_disk() {
+  local live_src live_disk name type
+  live_src="$(live_medium || true)"
+  live_disk=""
+  if [[ -n "$live_src" ]]; then
+    live_disk="$(lsblk -no PKNAME "$live_src" 2>/dev/null | head -n1 || true)"
+    if [[ -z "$live_disk" && "$live_src" == /dev/* ]]; then
+      live_disk="$(basename "$live_src" | sed 's/[0-9][0-9]*$//')"
+    fi
+  fi
+  while read -r name type; do
+    [[ "$type" == disk ]] || continue
+    [[ "$name" == sr* || "$name" == loop* || "$name" == ram* || "$name" == zram* ]] && continue
+    [[ -n "$live_disk" && "$name" == "$live_disk" ]] && continue
+    echo "/dev/$name"
+    return 0
+  done < <(lsblk -dn -o NAME,TYPE)
+}
+
+nvidia_note() {
+  if lspci 2>/dev/null | grep -qi nvidia; then
+    log "NVIDIA GPU detected; proprietary driver path is stubbed in v0.1; continuing with modesetting"
+  else
+    log "No NVIDIA GPU (skip proprietary path)"
+  fi
+}
+
+log "start auto=$AUTO"
+
+KEYMAP="$(ask "Keyboard" "Keyboard layout (example: us, gb, de)" "us")"
+[[ -n "$KEYMAP" ]] || KEYMAP=us
+loadkeys "$KEYMAP" 2>/dev/null || true
+
+HOSTNAME="$(ask "Hostname" "Hostname for this machine" "sartoria")"
+[[ -n "$HOSTNAME" ]] || HOSTNAME=sartoria
+
+USERNAME="$(ask "User" "Username (sudo, no root login)" "sartoria")"
+[[ -n "$USERNAME" ]] || USERNAME=sartoria
+echo "$USERNAME" | grep -Eq '^[a-z_][a-z0-9_-]*$' || die "invalid username"
+
+PASS1="$(ask_password "Password" "Password for ${USERNAME}")"
+PASS2="$(ask_password "Password" "Password again")"
+[[ "$PASS1" == "$PASS2" ]] || die "passwords do not match"
+[[ -n "$PASS1" ]] || die "empty password"
+
+DISK="$(target_disk)"
+[[ -b "$DISK" ]] || die "no target disk found"
+log "target disk: $DISK"
+yes_wipe "$DISK" || die "aborted"
+
+nvidia_note
+
+command -v sgdisk >/dev/null || die "sgdisk missing"
+command -v unsquashfs >/dev/null || die "unsquashfs missing"
+
+SQUASH="$(squashfs_path)"
+log "payload: $SQUASH"
+
+wipefs -a "$DISK" || true
+sgdisk --zap-all "$DISK"
+sgdisk -n 1:0:+512M -t 1:ef00 -c 1:EFI \
+       -n 2:0:0 -t 2:8300 -c 2:root \
+       "$DISK"
+partprobe "$DISK" || true
+sleep 1
+
+P1="${DISK}1"
+P2="${DISK}2"
+[[ -b "$P1" ]] || P1="${DISK}p1"
+[[ -b "$P2" ]] || P2="${DISK}p2"
+[[ -b "$P1" && -b "$P2" ]] || die "partitions not found on $DISK"
+
+mkfs.fat -F32 -n EFI "$P1"
+mkfs.ext4 -F -L sartoria "$P2"
+
+TARGET=/mnt/sartoria-target
+mkdir -p "$TARGET"
+mount "$P2" "$TARGET"
+
+log "copying payload (this takes a few minutes)"
+unsquashfs -f -d "$TARGET" "$SQUASH"
+mkdir -p "$TARGET/boot/efi"
+mount "$P1" "$TARGET/boot/efi"
+
+rm -f "$TARGET/.sartoria-live" "$TARGET/sartoria-auto"
+if [[ -f /usr/share/sartoria/inittab.disk ]]; then
+  cp /usr/share/sartoria/inittab.disk "$TARGET/etc/inittab"
+fi
+rm -f "$TARGET/usr/lib/sartoria/installer-tty"
+
+UUID_ROOT="$(blkid -s UUID -o value "$P2")"
+UUID_EFI="$(blkid -s UUID -o value "$P1")"
+cat > "$TARGET/etc/fstab" <<EOF
+UUID=${UUID_ROOT} / ext4 errors=remount-ro 0 1
+UUID=${UUID_EFI} /boot/efi vfat umask=0077 0 1
+EOF
+
+echo "$HOSTNAME" > "$TARGET/etc/hostname"
+cat > "$TARGET/etc/hosts" <<EOF
+127.0.0.1 localhost
+127.0.1.1 $HOSTNAME
+::1 localhost ip6-localhost ip6-loopback
+EOF
+
+cat > "$TARGET/etc/default/keyboard" <<EOF
+XKBMODEL="pc105"
+XKBLAYOUT="${KEYMAP}"
+XKBVARIANT=""
+XKBOPTIONS=""
+BACKSPACE="guess"
+EOF
+
+for d in proc sys dev dev/pts run; do
+  mkdir -p "$TARGET/$d"
+  mount --bind "/$d" "$TARGET/$d"
+done
+if [[ -d /sys/firmware/efi/efivars ]]; then
+  mkdir -p "$TARGET/sys/firmware/efi/efivars"
+  mount --bind /sys/firmware/efi/efivars "$TARGET/sys/firmware/efi/efivars" || true
+fi
+
+chroot "$TARGET" /usr/sbin/locale-gen >/dev/null 2>&1 || true
+chroot "$TARGET" /usr/sbin/update-initramfs -u || true
+
+if chroot "$TARGET" id "$USERNAME" >/dev/null 2>&1; then
+  chroot "$TARGET" userdel -r "$USERNAME" >/dev/null 2>&1 || true
+fi
+chroot "$TARGET" useradd -m -s /bin/bash -G sudo,audio,video,plugdev "$USERNAME"
+echo "${USERNAME}:${PASS1}" | chroot "$TARGET" chpasswd
+chroot "$TARGET" passwd -l root >/dev/null
+if [[ -x "$TARGET/usr/lib/sartoria/seed-user-config" ]]; then
+  chroot "$TARGET" /usr/lib/sartoria/seed-user-config --system || true
+fi
+
+chroot "$TARGET" DEBIAN_FRONTEND=noninteractive apt-get -y purge live-boot live-boot-initramfs-tools 2>/dev/null || true
+chroot "$TARGET" /usr/sbin/update-initramfs -u || true
+
+chroot "$TARGET" mkdir -p /boot/efi/EFI/BOOT
+if [[ -d /sys/firmware/efi ]]; then
+  chroot "$TARGET" grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+    --bootloader-id=Sartoria --recheck --no-nvram --removable
+else
+  chroot "$TARGET" grub-install --target=i386-pc --recheck "$DISK"
+fi
+chroot "$TARGET" update-grub
+
+chroot "$TARGET" rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
+chroot "$TARGET" dpkg-reconfigure -f noninteractive openssh-server >/dev/null 2>&1 || true
+rm -f "$TARGET/etc/machine-id" "$TARGET/var/lib/dbus/machine-id"
+chroot "$TARGET" /bin/systemd-machine-id-setup >/dev/null 2>&1 || \
+  chroot "$TARGET" sh -c 'dbus-uuidgen --ensure=/etc/machine-id' || \
+  printf '%s\n' "$(head -c 16 /dev/urandom | xxd -p)" > "$TARGET/etc/machine-id"
+
+sync
+for d in sys/firmware/efi/efivars proc sys dev/pts dev run boot/efi; do
+  umount -l "$TARGET/$d" 2>/dev/null || true
+done
+umount -l "$TARGET" || true
+
+log "Installation complete"
+printf 'SARTORIA_INSTALL_OK\n'
+if [[ "$AUTO" -eq 1 ]]; then
+  sleep 2
+  poweroff -f
+fi
+if [[ "$AUTO" -eq 0 ]]; then
+  dialog --title "Sartoria" --msgbox "Install finished. Remove the USB/ISO and reboot." 8 50 || true
+fi
+exit 0

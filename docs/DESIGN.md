@@ -187,7 +187,7 @@ Build the ISO **inside** a Devuan Excalibur VM/chroot (`scripts/build-iso.sh`). 
 
 Installer-first offline ISO. TUI: user, password, hostname, keyboard, whole-disk wipe. Install to a second VM disk. Installed VM boots without the live medium.
 
-**Exit D:** Install from ISO → working Sartoria VM. This is **v0.1**.
+**Exit D:** Install from ISO → working Sartoria VM. This is **v0.1**. Done 2026-09-19; see `lab/PHASE-D.md`. Build is debootstrap + squashfs + grub-mkrescue inside a Devuan VM, not live-build.
 
 ### Phase E — Hardware (NVIDIA gate)
 
