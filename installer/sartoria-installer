@@ -199,29 +199,36 @@ log "payload: $SQUASH"
 
 wipefs -a "$DISK" || true
 sgdisk --zap-all "$DISK" || die "sgdisk zap failed on $DISK"
-sgdisk -n 1:0:+512M -t 1:ef00 -c 1:EFI \
-       -n 2:0:0 -t 2:8300 -c 2:root \
+# Hybrid GPT: BIOS boot (SeaBIOS/QEMU default) + ESP (UEFI) + root.
+sgdisk -n 1:0:+1M -t 1:ef02 -c 1:bios_grub \
+       -n 2:0:+512M -t 2:ef00 -c 2:EFI \
+       -n 3:0:0 -t 3:8300 -c 3:root \
        "$DISK" || die "sgdisk partition failed on $DISK"
 partprobe "$DISK" || true
 sleep 1
 
-P1="${DISK}1"
-P2="${DISK}2"
-[[ -b "$P1" ]] || P1="${DISK}p1"
-[[ -b "$P2" ]] || P2="${DISK}p2"
-[[ -b "$P1" && -b "$P2" ]] || die "partitions not found on $DISK"
+part_n() {
+  local n="$1"
+  if [[ -b "${DISK}${n}" ]]; then echo "${DISK}${n}"
+  elif [[ -b "${DISK}p${n}" ]]; then echo "${DISK}p${n}"
+  else die "partition $n not found on $DISK"
+  fi
+}
+P_BIOS="$(part_n 1)"
+P_EFI="$(part_n 2)"
+P_ROOT="$(part_n 3)"
 
-mkfs.fat -F32 -n EFI "$P1" || die "mkfs.fat failed on $P1"
-mkfs.ext4 -F -L sartoria "$P2" || die "mkfs.ext4 failed on $P2"
+mkfs.fat -F32 -n EFI "$P_EFI" || die "mkfs.fat failed on $P_EFI"
+mkfs.ext4 -F -L sartoria "$P_ROOT" || die "mkfs.ext4 failed on $P_ROOT"
 
 TARGET=/mnt/sartoria-target
 mkdir -p "$TARGET"
-mount "$P2" "$TARGET" || die "mount $P2 failed"
+mount "$P_ROOT" "$TARGET" || die "mount $P_ROOT failed"
 
 log "copying payload (this takes a few minutes)"
 unsquashfs -f -d "$TARGET" "$SQUASH" || die "unsquashfs failed"
 mkdir -p "$TARGET/boot/efi"
-mount "$P1" "$TARGET/boot/efi" || die "mount EFI $P1 failed"
+mount "$P_EFI" "$TARGET/boot/efi" || die "mount EFI $P_EFI failed"
 
 rm -f "$TARGET/.sartoria-live" "$TARGET/sartoria-auto"
 if [[ -f /usr/share/sartoria/inittab.disk ]]; then
@@ -229,8 +236,8 @@ if [[ -f /usr/share/sartoria/inittab.disk ]]; then
 fi
 rm -f "$TARGET/usr/lib/sartoria/installer-tty"
 
-UUID_ROOT="$(blkid -s UUID -o value "$P2")"
-UUID_EFI="$(blkid -s UUID -o value "$P1")"
+UUID_ROOT="$(blkid -s UUID -o value "$P_ROOT")"
+UUID_EFI="$(blkid -s UUID -o value "$P_EFI")"
 cat > "$TARGET/etc/fstab" <<EOF
 UUID=${UUID_ROOT} / ext4 errors=remount-ro 0 1
 UUID=${UUID_EFI} /boot/efi vfat umask=0077 0 1
@@ -277,13 +284,13 @@ chroot "$TARGET" DEBIAN_FRONTEND=noninteractive apt-get -y purge live-boot live-
 chroot "$TARGET" /usr/sbin/update-initramfs -u || true
 
 chroot "$TARGET" mkdir -p /boot/efi/EFI/BOOT
+# BIOS GRUB uses the 1M bios_grub slice (needed for SeaBIOS/QEMU without UEFI).
+chroot "$TARGET" grub-install --target=i386-pc --recheck "$DISK" || die "BIOS grub-install failed"
 if [[ -d /sys/firmware/efi ]]; then
   chroot "$TARGET" grub-install --target=x86_64-efi --efi-directory=/boot/efi \
-    --bootloader-id=Sartoria --recheck --no-nvram --removable
-else
-  chroot "$TARGET" grub-install --target=i386-pc --recheck "$DISK"
+    --bootloader-id=Sartoria --recheck --no-nvram --removable || die "EFI grub-install failed"
 fi
-chroot "$TARGET" update-grub
+chroot "$TARGET" update-grub || die "update-grub failed"
 
 chroot "$TARGET" rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
 chroot "$TARGET" dpkg-reconfigure -f noninteractive openssh-server >/dev/null 2>&1 || true
