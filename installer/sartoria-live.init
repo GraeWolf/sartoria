@@ -1,0 +1,27 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          sartoria-live
+# Required-Start:    $local_fs
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Live-ISO prep so rc does not hang before the TUI
+### END INIT INFO
+
+# Only the installer ISO has this marker. The copied disk does not.
+[ -f /.sartoria-live ] || exit 0
+
+# x11-common (leftover after XLibre replaces Xorg) wants these dirs.
+# If they are missing, startpar reports "x11-common ... failed!" and
+# the VGA console looks hung even though sshd has already started.
+mkdir -p /tmp/.X11-unix /tmp/.ICE-unix /tmp/.font-unix
+chmod 1777 /tmp/.X11-unix /tmp/.ICE-unix /tmp/.font-unix 2>/dev/null || true
+
+if [ -w /dev/ttyS0 ]; then
+  printf '\nSartoria installer is on the graphical console (tty1), not SSH.\n' >/dev/ttyS0
+fi
+if [ -w /dev/tty1 ]; then
+  printf '\nSartoria installer starting on this console...\n' >/dev/tty1
+fi
+
+exit 0

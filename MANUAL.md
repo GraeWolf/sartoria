@@ -4,10 +4,11 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 
 ## Install
 
-1. Write `sartoria-*-amd64.iso` to USB (`dd` or similar).
+1. Write `sartoria-*-amd64.iso` to USB (`dd` or similar), or attach it as a CD in a VM.
 2. Boot it. GRUB: **Install Sartoria**.
-3. TUI asks keyboard, hostname, user, password, and a whole-disk wipe confirm.
-4. Reboot without the USB. Log in on tty1; `startx` runs on that VT only.
+3. Use the **graphical/VGA console**, not serial and not SSH. The TUI is on tty1.
+4. TUI asks keyboard, hostname, user, password, and a whole-disk wipe confirm.
+5. Reboot without the USB/ISO. Log in on tty1; `startx` runs on that VT only.
 
 
 ## Principles

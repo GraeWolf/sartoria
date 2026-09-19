@@ -74,6 +74,12 @@ echo 'sartoria-live' > "$ROOTFS/etc/hostname"
 
 install -m 0755 "$ROOT/installer/sartoria-installer" "$ROOTFS/usr/sbin/sartoria-installer"
 install -m 0755 "$ROOT/installer/installer-tty" "$ROOTFS/usr/lib/sartoria/installer-tty"
+install -m 0755 "$ROOT/installer/sartoria-live.init" "$ROOTFS/etc/init.d/sartoria-live"
+chroot "$ROOTFS" update-rc.d sartoria-live start 01 S . || \
+  ln -sf ../init.d/sartoria-live "$ROOTFS/etc/rcS.d/S01sartoria-live"
+# XLibre removes xorg's x11-common package but an rc symlink can remain.
+chroot "$ROOTFS" update-rc.d -f x11-common remove 2>/dev/null || true
+rm -f "$ROOTFS"/etc/rc*.d/[SK]*x11-common
 touch "$ROOTFS/.sartoria-live"
 cp "$ROOTFS/etc/inittab" "$ROOTFS/usr/share/sartoria/inittab.disk"
 if grep -q '^1:' "$ROOTFS/etc/inittab"; then

@@ -13,3 +13,5 @@ v0.1 prompts:
 Offline ISO. Whole disk, ext4, no LUKS. NVIDIA detect → skip in a VM.
 
 Unattended lab: boot the GRUB entry “Install Sartoria (unattended lab)” or pass `sartoria.auto=1`. Defaults: keymap `us`, hostname `sartoria`, user `sartoria` / password `sartoria`, wipe the first non-live disk.
+
+The TUI runs on **tty1 (the VM graphical display)**. Boot logs, `sshd`, and `x11-common` messages are not the installer. Do not SSH in to install. Open the VGA/Spice/VNC window.
