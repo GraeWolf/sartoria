@@ -37,8 +37,9 @@ fi
 echo "$ISO_SHA256  $ISO_PATH" | sha256sum -c -
 
 echo "extracting installer kernel/initrd"
-bsdtar -xOf "$ISO_PATH" install.amd/vmlinuz > "$CACHE/vmlinuz"
-bsdtar -xOf "$ISO_PATH" install.amd/initrd.gz > "$CACHE/initrd.gz"
+# Devuan 6.1 netinstall (syslinux), not Debian's install.amd/ layout.
+bsdtar -xOf "$ISO_PATH" boot/isolinux/linux > "$CACHE/vmlinuz"
+bsdtar -xOf "$ISO_PATH" boot/isolinux/initrd.gz > "$CACHE/initrd.gz"
 [[ -s "$CACHE/vmlinuz" && -s "$CACHE/initrd.gz" ]] || die "failed to extract installer from ISO"
 
 echo "injecting preseed.cfg into initrd (concatenated cpio)"
@@ -65,9 +66,10 @@ set +e
   -drive "file=${DISK},if=virtio,format=qcow2,cache=writeback" \
   -netdev user,id=n0 \
   -device virtio-net-pci,netdev=n0 \
+  -cdrom "$ISO_PATH" \
   -kernel "$CACHE/vmlinuz" \
   -initrd "$CACHE/initrd-preseed.gz" \
-  -append "auto=true priority=critical locale=en_US.UTF-8 keymap=us hostname=sartoria-lab domain=local interface=auto debian-installer/framebuffer=false --- console=ttyS0,115200n8" \
+  -append "auto=true priority=critical locale=en_US.UTF-8 keymap=us hostname=sartoria-lab domain=local interface=auto debian-installer/framebuffer=false nomodeset --- console=ttyS0,115200n8" \
   -nographic \
   -no-reboot \
   >"$SERIAL_LOG" 2>&1
