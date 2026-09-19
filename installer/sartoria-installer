@@ -21,15 +21,24 @@ log() {
     printf 'sartoria-installer: %s\n' "$*" >/dev/ttyS0 2>/dev/null || true
   fi
 }
-die() {
+show_err() {
   log "ERROR: $*"
-  if [[ "$AUTO" -eq 0 ]]; then
-    set +e
-    dialog --title "Sartoria installer" --msgbox "$*" 10 60 >"$UI_TTY"
-    set -e
-  fi
+  printf '\n*** Sartoria installer ***\n%s\n\n(This is still the LIVE ISO.)\n' "$*" >/dev/tty1
+  printf '%s\n' "$*" >/dev/ttyS0 2>/dev/null || true
+  sleep 8
+}
+
+die() {
+  show_err "$*"
   exit 1
 }
+
+on_err() {
+  local rc=$?
+  show_err "Command failed (line ${BASH_LINENO[0]}, rc ${rc}): ${BASH_COMMAND}"
+  exit "$rc"
+}
+trap on_err ERR
 
 drain_tty() {
   local _c
@@ -47,7 +56,7 @@ ask() {
   drain_tty
   stty sane <"$UI_TTY" 2>/dev/null || true
   set +e
-  dialog --title "$title" --inputbox "$text" 10 60 "$default" >"$UI_TTY" 2>"$tmp"
+  dialog --title "$title" --inputbox "$text" 14 70 "$default" >"$UI_TTY" 2>"$tmp"
   rc=$?
   set -e
   val="$(tr -d '\r' <"$tmp" | tail -n 1)"
@@ -84,8 +93,15 @@ confirm_wipe() {
   if [[ "$AUTO" -eq 1 ]]; then
     return 0
   fi
-  typed="$(ask "Wipe ${disk}" "This DESTROYS all data on ${disk}.\nGPT + 512M EFI + ext4, no encryption.\n\nType YES in capital letters to continue." "")"
-  [[ "$typed" == "YES" ]] || die "Wipe cancelled (you must type YES). The live ISO is still running; this is not an installed system."
+  while true; do
+    typed="$(ask "Wipe ${disk}" "Destroys all data on ${disk}. Type YES to continue, or ABORT to stop." "")"
+    typed="$(printf '%s' "$typed" | tr -d '[:space:]')"
+    case "$typed" in
+      YES) return 0 ;;
+      ABORT|abort|Quit|QUIT) die "Wipe cancelled." ;;
+      *) show_err "Type YES (capitals) to wipe, or ABORT to stop. You typed: '${typed}'" ;;
+    esac
+  done
 }
 
 live_medium() {
@@ -174,10 +190,10 @@ SQUASH="$(squashfs_path)"
 log "payload: $SQUASH"
 
 wipefs -a "$DISK" || true
-sgdisk --zap-all "$DISK"
+sgdisk --zap-all "$DISK" || die "sgdisk zap failed on $DISK"
 sgdisk -n 1:0:+512M -t 1:ef00 -c 1:EFI \
        -n 2:0:0 -t 2:8300 -c 2:root \
-       "$DISK"
+       "$DISK" || die "sgdisk partition failed on $DISK"
 partprobe "$DISK" || true
 sleep 1
 
@@ -187,17 +203,17 @@ P2="${DISK}2"
 [[ -b "$P2" ]] || P2="${DISK}p2"
 [[ -b "$P1" && -b "$P2" ]] || die "partitions not found on $DISK"
 
-mkfs.fat -F32 -n EFI "$P1"
-mkfs.ext4 -F -L sartoria "$P2"
+mkfs.fat -F32 -n EFI "$P1" || die "mkfs.fat failed on $P1"
+mkfs.ext4 -F -L sartoria "$P2" || die "mkfs.ext4 failed on $P2"
 
 TARGET=/mnt/sartoria-target
 mkdir -p "$TARGET"
-mount "$P2" "$TARGET"
+mount "$P2" "$TARGET" || die "mount $P2 failed"
 
 log "copying payload (this takes a few minutes)"
-unsquashfs -f -d "$TARGET" "$SQUASH"
+unsquashfs -f -d "$TARGET" "$SQUASH" || die "unsquashfs failed"
 mkdir -p "$TARGET/boot/efi"
-mount "$P1" "$TARGET/boot/efi"
+mount "$P1" "$TARGET/boot/efi" || die "mount EFI $P1 failed"
 
 rm -f "$TARGET/.sartoria-live" "$TARGET/sartoria-auto"
 if [[ -f /usr/share/sartoria/inittab.disk ]]; then
