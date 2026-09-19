@@ -42,11 +42,12 @@ bsdtar -xOf "$ISO_PATH" boot/isolinux/linux > "$CACHE/vmlinuz"
 bsdtar -xOf "$ISO_PATH" boot/isolinux/initrd.gz > "$CACHE/initrd.gz"
 [[ -s "$CACHE/vmlinuz" && -s "$CACHE/initrd.gz" ]] || die "failed to extract installer from ISO"
 
-echo "injecting preseed.cfg into initrd (concatenated cpio)"
+echo "injecting preseed.cfg + ssh key into initrd (concatenated cpio)"
 PRE="$CACHE/preseed-cpio"
 rm -rf "$PRE"
 mkdir -p "$PRE"
 cp "$LAB/preseed.cfg" "$PRE/preseed.cfg"
+cp "$SSH_KEY.pub" "$PRE/sartoria-authorized_keys"
 ( cd "$PRE" && find . -print0 | cpio --null --create --format=newc ) | gzip -9 > "$CACHE/preseed.cpio.gz"
 cat "$CACHE/preseed.cpio.gz" "$CACHE/initrd.gz" > "$CACHE/initrd-preseed.gz"
 

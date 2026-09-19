@@ -21,6 +21,7 @@ ssh_lab true || die "VM not up — ./scripts/lab-run.sh"
 ssh_lab bash -s <<'EOF'
 set -euo pipefail
 sudo_pw() { printf '%s\n' 'sartoria' | sudo -S -p '' "$@"; }
+sudo_pw sed -i 's/^deb cdrom:/# deb cdrom:/' /etc/apt/sources.list
 sudo_pw apt-get update
 sudo_pw DEBIAN_FRONTEND=noninteractive apt-get install -y \
   xorg xinit herbstluftwm xterm

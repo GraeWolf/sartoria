@@ -1,0 +1,4 @@
+# Phase A3 2026-09-19T17:32:41Z
+pid1_comm=init
+pid1_exe=/usr/sbin/init
+os=PRETTY_NAME="Devuan GNU/Linux 6 (excalibur)" NAME="Devuan GNU/Linux" VERSION_ID="6" VERSION="6 (excalibur)" VERSION_CODENAME="excalibur" ID=devuan ID_LIKE=debian HOME_URL="https://www.devuan.org/" SUPPORT_URL="https://devuan.org/os/community" BUG_REPORT_URL="https://bugs.devuan.org/" 

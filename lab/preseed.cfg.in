@@ -76,5 +76,16 @@ d-i grub-installer/bootdev string default
 
 d-i finish-install/reboot_in_progress note
 
+# Files copied into the installer initrd (see scripts/lab-install.sh):
+#   /sartoria-authorized_keys
+# Avoid in-target + nested quotes; a failed late_command drops d-i to the main menu.
 d-i preseed/late_command string \
-  in-target sh -c 'install -d -m 700 -o sartoria -g sartoria /home/sartoria/.ssh; printf "%s\n" "@SSH_PUBKEY@" > /home/sartoria/.ssh/authorized_keys; chown sartoria:sartoria /home/sartoria/.ssh/authorized_keys; chmod 600 /home/sartoria/.ssh/authorized_keys; grep -q "^T0:" /etc/inittab || echo "T0:23:respawn:/sbin/getty -L ttyS0 115200 vt100" >> /etc/inittab; echo "sartoria ALL=(ALL) ALL" > /etc/sudoers.d/010-sartoria; chmod 440 /etc/sudoers.d/010-sartoria'
+  mkdir -p /target/home/sartoria/.ssh ; \
+  cp /sartoria-authorized_keys /target/home/sartoria/.ssh/authorized_keys ; \
+  chroot /target chown -R sartoria:sartoria /home/sartoria/.ssh ; \
+  chmod 700 /target/home/sartoria/.ssh ; \
+  chmod 600 /target/home/sartoria/.ssh/authorized_keys ; \
+  grep -q '^T0:' /target/etc/inittab || echo 'T0:23:respawn:/sbin/getty -L ttyS0 115200 vt100' >> /target/etc/inittab ; \
+  echo 'sartoria ALL=(ALL) ALL' > /target/etc/sudoers.d/010-sartoria ; \
+  chmod 440 /target/etc/sudoers.d/010-sartoria ; \
+  sed -i 's/^deb cdrom:/# deb cdrom:/' /target/etc/apt/sources.list
