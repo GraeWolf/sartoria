@@ -1,17 +1,15 @@
 #!/bin/sh
-# tty1 entry on the live ISO. Interactive installer, or auto if requested.
-# inittab does not always attach a controlling tty; bind to tty1 explicitly.
+# tty1 entry on the live ISO. init already attached this process to tty1.
+# Do not setsid: that drops the controlling tty and dialog mishandles Enter/echo.
 sleep 2
 chvt 1 2>/dev/null || true
 export TERM="${TERM:-linux}"
+stty sane </dev/tty1 2>/dev/null || true
+stty sane 2>/dev/null || true
 
-banner() {
-  msg="Sartoria: TUI installer is on the VGA/display window (tty1). sshd listening is not the installer."
-  [ -w /dev/ttyS0 ] && printf '\n%s\n' "$msg" >/dev/ttyS0
-  [ -w /dev/console ] && printf '\n%s\n' "$msg" >/dev/console
-}
-
-banner
+if [ -w /dev/ttyS0 ]; then
+  printf '\nSartoria TUI is on the graphical console (tty1), not SSH or serial.\n' >/dev/ttyS0
+fi
 
 if grep -qw sartoria.auto /proc/cmdline 2>/dev/null || [ -f /sartoria-auto ]; then
   if [ -w /dev/ttyS0 ]; then
@@ -19,10 +17,10 @@ if grep -qw sartoria.auto /proc/cmdline 2>/dev/null || [ -f /sartoria-auto ]; th
   else
     /usr/sbin/sartoria-installer --auto
   fi
-  rc=$?
-  [ "$rc" -eq 0 ] && exit 0
+  # Fall through to getty so inittab respawn does not restart the installer.
   exec /sbin/getty 38400 tty1
 fi
 
-# Interactive: dialog must own tty1.
-exec setsid sh -c 'exec /usr/sbin/sartoria-installer <>/dev/tty1 >&0 2>&1'
+# Run the TUI on the fds init gave us (tty1). Always end at getty.
+/usr/sbin/sartoria-installer <>/dev/tty1 >&0 2>&1 || true
+exec /sbin/getty 38400 tty1

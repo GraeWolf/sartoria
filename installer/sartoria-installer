@@ -10,38 +10,78 @@ AUTO=0
 grep -qw sartoria.auto /proc/cmdline 2>/dev/null && AUTO=1
 [[ -f /sartoria-auto ]] && AUTO=1
 
+# Interactive UI on the real console. Never write installer logs to tty1:
+# they corrupt dialog and get captured by $(ask).
+UI_TTY=/dev/tty1
+[[ -e /dev/tty ]] && UI_TTY=/dev/tty
+
 log() {
-  printf 'sartoria-installer: %s\n' "$*" | tee -a "$LOG"
+  printf 'sartoria-installer: %s\n' "$*" >>"$LOG"
   if [[ -w /dev/ttyS0 ]]; then
     printf 'sartoria-installer: %s\n' "$*" >/dev/ttyS0 2>/dev/null || true
   fi
 }
 die() { log "ERROR: $*"; exit 1; }
 
+drain_tty() {
+  local _c
+  while IFS= read -r -t 0.1 -n 1 _c; do :; done <"$UI_TTY" 2>/dev/null || true
+}
+
+# dialog: UI on stdout, value on stderr. Send UI to the console, value to a file.
 ask() {
-  local title="$1" text="$2" default="${3:-}"
+  local title="$1" text="$2" default="${3:-}" tmp rc val
   if [[ "$AUTO" -eq 1 ]]; then
     printf '%s\n' "$default"
-    return
+    return 0
   fi
-  dialog --stdout --title "$title" --inputbox "$text" 10 60 "$default"
+  tmp="$(mktemp)"
+  drain_tty
+  stty sane <"$UI_TTY" 2>/dev/null || true
+  set +e
+  dialog --title "$title" --inputbox "$text" 10 60 "$default" >"$UI_TTY" 2>"$tmp"
+  rc=$?
+  set -e
+  val="$(tr -d '\r' <"$tmp" | tail -n 1)"
+  rm -f "$tmp"
+  if [[ "$rc" -ne 0 || -z "$val" ]]; then
+    printf '%s\n' "$default"
+  else
+    printf '%s\n' "$val"
+  fi
 }
 
 ask_password() {
-  local title="$1" text="$2"
+  local title="$1" text="$2" tmp rc val
   if [[ "$AUTO" -eq 1 ]]; then
     printf '%s\n' "sartoria"
-    return
+    return 0
   fi
-  dialog --stdout --title "$title" --insecure --passwordbox "$text" 10 60
+  tmp="$(mktemp)"
+  drain_tty
+  stty sane <"$UI_TTY" 2>/dev/null || true
+  set +e
+  # No --insecure: echo must stay off. Result on stderr, UI on $UI_TTY.
+  dialog --title "$title" --passwordbox "$text" 10 60 >"$UI_TTY" 2>"$tmp"
+  rc=$?
+  set -e
+  val="$(tr -d '\r' <"$tmp" | tail -n 1)"
+  rm -f "$tmp"
+  [[ "$rc" -eq 0 ]] || die "password entry cancelled"
+  printf '%s\n' "$val"
 }
 
 yes_wipe() {
-  local disk="$1"
+  local disk="$1" rc
   if [[ "$AUTO" -eq 1 ]]; then
     return 0
   fi
-  dialog --title "Wipe disk" --yesno "ALL DATA on ${disk} will be destroyed.\n\nGPT + 512M EFI + ext4 root. No encryption.\n\nType-level confirm: select Yes to wipe." 12 60
+  drain_tty
+  set +e
+  dialog --title "Wipe disk" --yesno "ALL DATA on ${disk} will be destroyed.\n\nGPT + 512M EFI + ext4 root. No encryption.\n\nSelect Yes to wipe." 12 60 >"$UI_TTY"
+  rc=$?
+  set -e
+  return "$rc"
 }
 
 live_medium() {
@@ -97,7 +137,7 @@ log "start auto=$AUTO"
 
 KEYMAP="$(ask "Keyboard" "Keyboard layout (example: us, gb, de)" "us")"
 [[ -n "$KEYMAP" ]] || KEYMAP=us
-loadkeys "$KEYMAP" 2>/dev/null || true
+loadkeys "$KEYMAP" </dev/null >/dev/null 2>&1 || true
 
 HOSTNAME="$(ask "Hostname" "Hostname for this machine" "sartoria")"
 [[ -n "$HOSTNAME" ]] || HOSTNAME=sartoria
