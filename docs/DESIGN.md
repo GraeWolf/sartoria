@@ -56,7 +56,7 @@ The name is Italian for tailoring: one cut, not a kit.
 | Shell/editor/font | bash, neovim, JetBrainsMono Nerd Font |
 | Theme | One dark, dense, cool-neutral theme (Tokyo Night-class) |
 | CLI (v0.1) | `sartoria status`, `sartoria help`, `sartoria version` |
-| Installer prompts | Username, password, hostname (default `sartoria`), keyboard, explicit whole-disk wipe confirm. Locale `en_US.UTF-8`. Timezone UTC |
+| Installer prompts | Username, password, hostname (default `sartoria`), keyboard, **disk to wipe** (menu; other disks untouched), explicit YES confirm. Locale `en_US.UTF-8`. Timezone UTC |
 | FDE | Skip on v0.1 VM; later for a laptop profile |
 | Gaming | Capable later (`sartoria-games`), after NVIDIA works. Not in the base ISO |
 
