@@ -7,8 +7,9 @@ v0.1 prompts:
 1. Keyboard layout
 2. Hostname (default `sartoria`)
 3. Username and password (sudo user; no root login)
-4. Explicit whole-disk wipe confirm
-5. Install
+4. Disk to wipe (menu of disks ≥ 1G; NTFS/Windows is labelled; other disks are not touched)
+5. Explicit whole-disk wipe confirm (type YES)
+6. Install
 
 Offline ISO. Whole disk, ext4, no LUKS. NVIDIA detect → skip in a VM.
 

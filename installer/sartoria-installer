@@ -126,8 +126,8 @@ squashfs_path() {
   die "cannot find filesystem.squashfs on the live medium"
 }
 
-target_disk() {
-  local live_src live_disk name type size tran best="" best_size=0
+live_disk_name() {
+  local live_src live_disk
   live_src="$(live_medium || true)"
   live_disk=""
   if [[ -n "$live_src" ]]; then
@@ -136,21 +136,88 @@ target_disk() {
       live_disk="$(basename "$live_src" | sed 's/[0-9][0-9]*$//')"
     fi
   fi
-  # NAME TYPE SIZE_BYTES TRAN — skip floppy (fd0), CD, ram, and anything under 1G.
-  while read -r name type size tran; do
-    [[ "$type" == disk ]] || continue
+  printf '%s\n' "$live_disk"
+}
+
+disk_os_hint() {
+  local name="$1" info
+  info="$(lsblk -n -o FSTYPE,PARTTYPENAME "/dev/$name" 2>/dev/null | tr '\n' ' ')"
+  if printf '%s' "$info" | grep -qiE 'ntfs|bitlocker|microsoft|hpfs'; then
+    printf '%s\n' "NTFS/Windows — leave this if it is the Windows drive"
+  elif printf '%s' "$info" | grep -qiE 'ext4|btrfs|xfs'; then
+    printf '%s\n' "Linux filesystem"
+  else
+    printf '%s\n' "no Windows/Linux labels seen"
+  fi
+}
+
+# Prints: name<TAB>size_bytes<TAB>label  for each installable disk.
+list_candidate_disks() {
+  local live_disk name type size tran model human hint
+  live_disk="$(live_disk_name)"
+  while IFS= read -r line; do
+    eval "$line"
+    [[ "${TYPE:-}" == disk ]] || continue
+    name="${NAME:-}"
+    size="${SIZE:-0}"
+    tran="${TRAN:-}"
+    model="${MODEL:-}"
+    [[ -n "$name" ]] || continue
     [[ "$name" == fd* || "$name" == sr* || "$name" == loop* || "$name" == ram* || "$name" == zram* || "$name" == md* ]] && continue
     [[ "$tran" == "floppy" ]] && continue
     [[ -n "$live_disk" && "$name" == "$live_disk" ]] && continue
     [[ "$size" =~ ^[0-9]+$ ]] || continue
     [[ "$size" -ge 1073741824 ]] || continue
-    if [[ "$size" -gt "$best_size" ]]; then
-      best="$name"
-      best_size="$size"
+    if command -v numfmt >/dev/null 2>&1; then
+      human="$(numfmt --to=iec --suffix=B "$size")"
+    else
+      human="$((size / 1073741824))G"
     fi
-  done < <(lsblk -dn -b -o NAME,TYPE,SIZE,TRAN)
+    hint="$(disk_os_hint "$name")"
+    model="${model:-unknown}"
+    printf '%s\t%s\t%s %s — %s\n' "$name" "$size" "$human" "$model" "$hint"
+  done < <(lsblk -dn -b -P -o NAME,TYPE,SIZE,TRAN,MODEL)
+}
+
+# Unattended: largest eligible disk.
+target_disk() {
+  local name size label best="" best_size=0
+  while IFS=$'\t' read -r name size label; do
+    [[ "$size" -gt "$best_size" ]] || continue
+    best="$name"
+    best_size="$size"
+  done < <(list_candidate_disks)
   [[ -n "$best" ]] || return 1
   echo "/dev/$best"
+}
+
+pick_disk() {
+  local name size label tmp rc val
+  if [[ "$AUTO" -eq 1 ]]; then
+    target_disk
+    return
+  fi
+  tmp="$(mktemp)"
+  local -a menu_args=()
+  while IFS=$'\t' read -r name size label; do
+    menu_args+=("$name" "$label")
+  done < <(list_candidate_disks)
+  if [[ ${#menu_args[@]} -eq 0 ]]; then
+    rm -f "$tmp"
+    return 1
+  fi
+  drain_tty
+  stty sane <"$UI_TTY" 2>/dev/null || true
+  set +e
+  dialog --title "Install disk" --menu \
+    "Choose the disk to WIPE. Other disks are left alone. Do not pick the Windows drive." \
+    20 74 8 "${menu_args[@]}" >"$UI_TTY" 2>"$tmp"
+  rc=$?
+  set -e
+  val="$(tr -d '\r' <"$tmp" | tail -n 1)"
+  rm -f "$tmp"
+  [[ "$rc" -eq 0 && -n "$val" ]] || die "Disk selection cancelled."
+  echo "/dev/$val"
 }
 
 nvidia_note() {
@@ -179,7 +246,7 @@ PASS2="$(ask_password "Password" "Password again")"
 [[ "$PASS1" == "$PASS2" ]] || die "passwords do not match"
 [[ -n "$PASS1" ]] || die "empty password"
 
-DISK="$(target_disk || true)"
+DISK="$(pick_disk || true)"
 [[ -b "$DISK" ]] || die "No install disk found. Attach a virtual hard disk (>= 1G). Floppy (/dev/fd0) and CD-ROM are ignored."
 log "target disk: $DISK"
 confirm_wipe "$DISK"
