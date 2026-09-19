@@ -129,6 +129,7 @@ else
 fi
 
 echo "grub-mkrescue"
+rm -f "$OUT"
 grub-mkrescue -o "$OUT" "$ISOTREE"
 ls -lh "$OUT"
 echo "SARTORIA_ISO_OK $OUT"
