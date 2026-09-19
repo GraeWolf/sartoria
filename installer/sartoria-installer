@@ -21,7 +21,15 @@ log() {
     printf 'sartoria-installer: %s\n' "$*" >/dev/ttyS0 2>/dev/null || true
   fi
 }
-die() { log "ERROR: $*"; exit 1; }
+die() {
+  log "ERROR: $*"
+  if [[ "$AUTO" -eq 0 ]]; then
+    set +e
+    dialog --title "Sartoria installer" --msgbox "$*" 10 60 >"$UI_TTY"
+    set -e
+  fi
+  exit 1
+}
 
 drain_tty() {
   local _c
@@ -71,17 +79,13 @@ ask_password() {
   printf '%s\n' "$val"
 }
 
-yes_wipe() {
-  local disk="$1" rc
+confirm_wipe() {
+  local disk="$1" typed
   if [[ "$AUTO" -eq 1 ]]; then
     return 0
   fi
-  drain_tty
-  set +e
-  dialog --title "Wipe disk" --yesno "ALL DATA on ${disk} will be destroyed.\n\nGPT + 512M EFI + ext4 root. No encryption.\n\nSelect Yes to wipe." 12 60 >"$UI_TTY"
-  rc=$?
-  set -e
-  return "$rc"
+  typed="$(ask "Wipe ${disk}" "This DESTROYS all data on ${disk}.\nGPT + 512M EFI + ext4, no encryption.\n\nType YES in capital letters to continue." "")"
+  [[ "$typed" == "YES" ]] || die "Wipe cancelled (you must type YES). The live ISO is still running; this is not an installed system."
 }
 
 live_medium() {
@@ -154,7 +158,12 @@ PASS2="$(ask_password "Password" "Password again")"
 DISK="$(target_disk)"
 [[ -b "$DISK" ]] || die "no target disk found"
 log "target disk: $DISK"
-yes_wipe "$DISK" || die "aborted"
+confirm_wipe "$DISK"
+if [[ "$AUTO" -eq 0 ]]; then
+  set +e
+  dialog --title "Sartoria" --infobox "Installing to ${DISK}. This takes a few minutes." 5 50 >"$UI_TTY"
+  set -e
+fi
 
 nvidia_note
 

@@ -23,4 +23,5 @@ fi
 
 # Run the TUI on the fds init gave us (tty1). Always end at getty.
 /usr/sbin/sartoria-installer <>/dev/tty1 >&0 2>&1 || true
+printf '\nInstaller stopped. This login is the LIVE ISO (hostname sartoria-live),\nnot an installed system. Reboot the ISO to try again.\n' >/dev/tty1
 exec /sbin/getty 38400 tty1
