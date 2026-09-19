@@ -17,11 +17,25 @@ Depends: herbstluftwm,
          picom,
          neovim,
          fonts-jetbrains-mono,
+         gnome-themes-extra,
+         dbus-x11,
+         pipewire,
+         pipewire-pulse,
+         wireplumber,
          network-manager,
+         libnotify-bin,
+         xdg-utils,
+         xclip,
+         x11-xserver-utils,
          sudo,
+         ca-certificates,
+         curl,
+         gnupg,
          ${misc:Depends}
-Recommends: xlibre | xorg
+Recommends: xlibre, xlibre-archive-keyring
 Description: Sartoria desktop metapackage
  Keyboard-first herbstluftwm session for Sartoria (Devuan remix).
- XLibre is the shipped display server; xorg is listed only as a
- development rescue alternative, not a product session.
+ Ships session defaults, the sartoria CLI, the XLibre apt source, and
+ depends on the Phase B application stack. XLibre itself is a
+ Recommends: enable the shipped source, apt-get update, then install
+ xlibre. Xorg is a development rescue, not the product session.

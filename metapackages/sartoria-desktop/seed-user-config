@@ -1,0 +1,50 @@
+#!/bin/sh
+# Copy packaged defaults into a home directory if the user has not
+# created those files yet. Never overwrite existing user config.
+set -e
+
+SHARE=/usr/share/sartoria
+SKEL_CONFIG="$SHARE/skel"
+
+seed_home() {
+  home="$1"
+  user="$2"
+  [ -d "$home" ] || return 0
+  mkdir -p "$home/.config"
+  if [ -d "$SKEL_CONFIG/.config" ]; then
+    find "$SKEL_CONFIG/.config" -mindepth 1 -maxdepth 1 | while read -r src; do
+      dest="$home/.config/$(basename "$src")"
+      if [ ! -e "$dest" ]; then
+        cp -a "$src" "$dest"
+      fi
+    done
+  fi
+  for f in .xinitrc .bash_profile .Xresources; do
+    if [ ! -e "$home/$f" ] && [ -e "$SKEL_CONFIG/$f" ]; then
+      cp -a "$SKEL_CONFIG/$f" "$home/$f"
+    fi
+  done
+  chmod 755 "$home/.xinitrc" 2>/dev/null || true
+  chmod 755 "$home/.config/herbstluftwm/autostart" 2>/dev/null || true
+  if [ -n "$user" ] && [ "$user" != "root" ]; then
+    chown -R "$user:$user" "$home/.config" "$home/.xinitrc" "$home/.bash_profile" "$home/.Xresources" 2>/dev/null || true
+  fi
+}
+
+if [ "${1:-}" = "--system" ]; then
+  if [ -d /etc/skel ] && [ -d "$SKEL_CONFIG" ]; then
+    mkdir -p /etc/skel/.config
+    cp -a "$SKEL_CONFIG/." /etc/skel/
+  fi
+  if [ -d /home ]; then
+    for home in /home/*; do
+      [ -d "$home" ] || continue
+      user="$(basename "$home")"
+      seed_home "$home" "$user"
+    done
+  fi
+  exit 0
+fi
+
+# Invoked from sartoria-session as the logged-in user.
+seed_home "${HOME:?}" "$(id -un)"

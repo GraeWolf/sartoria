@@ -1,0 +1,15 @@
+#!/bin/sh
+# Display session for startx. Seeds user config once, then herbstluftwm.
+if [ -x /usr/lib/sartoria/seed-user-config ]; then
+  /usr/lib/sartoria/seed-user-config || true
+fi
+
+export TERMINAL="${TERMINAL:-alacritty}"
+export EDITOR="${EDITOR:-nvim}"
+export XDG_SESSION_TYPE=x11
+export XDG_CURRENT_DESKTOP=herbstluftwm
+
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && command -v dbus-launch >/dev/null 2>&1; then
+  exec dbus-launch --exit-with-session herbstluftwm --locked
+fi
+exec herbstluftwm --locked

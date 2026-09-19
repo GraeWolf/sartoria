@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # v0.1 CLI: status, help, version. No update wrapper, no AI.
 set -euo pipefail
-VERSION="0.0.0-phase-b"
+VERSION="0.0.1"
 
 cmd_help() {
   cat <<'EOF'

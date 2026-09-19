@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+  if [ -x /usr/lib/sartoria/seed-user-config ]; then
+    /usr/lib/sartoria/seed-user-config --system || true
+  fi
+  if [ -x /etc/init.d/network-manager ]; then
+    update-rc.d network-manager defaults >/dev/null 2>&1 || true
+  fi
+  if [ -f /etc/apt/sources.list ]; then
+    sed -i 's/^deb cdrom:/# deb cdrom:/' /etc/apt/sources.list || true
+  fi
+  if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f /usr/share/fonts/truetype/sartoria >/dev/null 2>&1 || true
+  fi
+fi
+exit 0

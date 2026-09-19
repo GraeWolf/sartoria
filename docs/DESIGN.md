@@ -179,7 +179,7 @@ Autostart, polybar, rofi, dunst, picom, one theme, `sartoria` CLI stub.
 
 `sartoria-desktop` on a **fresh** Devuan Excalibur VM reproduces Phase B.
 
-**Exit C:** Fresh VM + one metapackage = Sartoria desktop.
+**Exit C:** Fresh VM + one metapackage = Sartoria desktop. Done 2026-09-19; see `lab/PHASE-C.md`.
 
 ### Phase D — ISO + TUI installer
 

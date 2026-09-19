@@ -15,7 +15,7 @@ mkdir -p "$LAB"
 : > "$SERIAL_LOG"
 
 "$QEMU_BIN" \
-  -name sartoria-lab \
+  -name "$LAB_NAME" \
   -machine q35,accel=kvm \
   -cpu host \
   -m 4096 \

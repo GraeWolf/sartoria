@@ -27,7 +27,11 @@ if [[ ! -f "$SSH_KEY" ]]; then
   ssh-keygen -t ed25519 -N "" -f "$SSH_KEY" -C "sartoria-lab"
 fi
 PUBKEY="$(cat "$SSH_KEY.pub")"
-sed "s|@SSH_PUBKEY@|${PUBKEY}|" "$LAB/preseed.cfg.in" > "$LAB/preseed.cfg"
+sed \
+  -e "s|@SSH_PUBKEY@|${PUBKEY}|" \
+  -e "s|^d-i netcfg/get_hostname string .*|d-i netcfg/get_hostname string ${LAB_NAME}|" \
+  -e "s|^d-i netcfg/hostname string .*|d-i netcfg/hostname string ${LAB_NAME}|" \
+  "$LAB/preseed.cfg.in" > "$LAB/preseed.cfg"
 
 if [[ ! -f "$ISO_PATH" ]]; then
   echo "downloading $ISO_NAME"
@@ -59,7 +63,7 @@ echo "this is the official Devuan netinstall; it needs network and several minut
 # Direct-kernel d-i boot. Product ISO is UEFI; see docs/DESIGN.md §11.
 set +e
 "$QEMU_BIN" \
-  -name sartoria-lab-install \
+  -name "${LAB_NAME}-install" \
   -machine q35,accel=kvm \
   -cpu host \
   -m 4096 \
@@ -70,7 +74,7 @@ set +e
   -cdrom "$ISO_PATH" \
   -kernel "$CACHE/vmlinuz" \
   -initrd "$CACHE/initrd-preseed.gz" \
-  -append "auto=true priority=critical locale=en_US.UTF-8 keymap=us hostname=sartoria-lab domain=local interface=auto debian-installer/framebuffer=false nomodeset --- console=ttyS0,115200n8" \
+  -append "auto=true priority=critical locale=en_US.UTF-8 keymap=us hostname=${LAB_NAME} domain=local interface=auto debian-installer/framebuffer=false nomodeset --- console=ttyS0,115200n8" \
   -nographic \
   -no-reboot \
   >"$SERIAL_LOG" 2>&1

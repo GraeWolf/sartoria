@@ -35,6 +35,8 @@ Weak password is intentional for a disposable VM.
 ./scripts/lab-verify.sh     # A3: PID 1 + two reboots
 ./scripts/lab-ssh.sh
 ./scripts/lab-phase-b.sh    # desktop stack on the same VM
+LAB_NAME=sartoria-c ./scripts/lab-install.sh
+LAB_NAME=sartoria-c ./scripts/lab-phase-c.sh   # metapackage on a fresh VM
 ```
 
 Images and ISOs are gitignored.
