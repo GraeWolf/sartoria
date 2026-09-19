@@ -36,7 +36,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 1. Boot.
 2. Log in on tty1 with the user created at install time.
 3. `startx` runs automatically on tty1 only.
-4. Super+Return opens a terminal. Super+Space opens the launcher.
+4. Super+Return (or **Alt+Return** if Super is eaten by the host) opens a terminal. Super+Space / Alt+Space opens the launcher.
 
 SSH sessions and other VTs do not start X.
 
@@ -67,7 +67,9 @@ XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is all
 
 ## Bindings
 
-Super is the modkey (Windows key).
+Super is the product modkey. **Alt is bound to the same actions** so a host compositor (Omarchy/Hyprland) that owns Super can still drive a Sartoria VM. Click the VM window, then use Alt.
+
+If Super is stolen and no terminal is open: SSH in and run `DISPLAY=:0 herbstclient spawn alacritty`, or log in on a guest VT and run that. A first login with an empty tag also spawns one terminal.
 
 | Key | Action |
 | --- | --- |

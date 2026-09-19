@@ -7,8 +7,15 @@ hc keyunbind --all
 hc mouseunbind --all
 hc unrule -F
 
-Mod=Mod4
+# Super is the product modkey. Alt is bound too so a host that also uses
+# Super (Omarchy/Hyprland) does not steal every shortcut from a VM.
 TERMINAL="${TERMINAL:-alacritty}"
+bind() {
+  local spec="$1"
+  shift
+  hc keybind "Mod4-$spec" "$@"
+  hc keybind "Mod1-$spec" "$@"
+}
 
 hc set default_frame_layout horizontal
 hc set auto_detect_monitors on
@@ -33,30 +40,30 @@ hc set frame_transparent_width 0
 
 command -v xsetroot >/dev/null && xsetroot -solid '#1a1b26'
 
-hc keybind $Mod-Shift-e quit
-hc keybind $Mod-Shift-q quit
-hc keybind $Mod-Shift-r reload
-hc keybind $Mod-q close
-hc keybind $Mod-Return spawn "$TERMINAL"
-hc keybind $Mod-space spawn rofi -show drun
+bind Shift-e quit
+bind Shift-q quit
+bind Shift-r reload
+bind q close
+bind Return spawn "$TERMINAL"
+bind space spawn rofi -show drun
 
-hc keybind $Mod-h focus left
-hc keybind $Mod-j focus down
-hc keybind $Mod-k focus up
-hc keybind $Mod-l focus right
-hc keybind $Mod-Shift-h shift left
-hc keybind $Mod-Shift-j shift down
-hc keybind $Mod-Shift-k shift up
-hc keybind $Mod-Shift-l shift right
+bind h focus left
+bind j focus down
+bind k focus up
+bind l focus right
+bind Shift-h shift left
+bind Shift-j shift down
+bind Shift-k shift up
+bind Shift-l shift right
 
-hc keybind $Mod-o split right 0.5
-hc keybind $Mod-u split bottom 0.5
-hc keybind $Mod-s floating toggle
-hc keybind $Mod-f fullscreen toggle
-hc keybind $Mod-p pseudotile toggle
-hc keybind $Mod-r remove
-hc keybind $Mod-Tab cycle_all +1
-hc keybind $Mod-Shift-Tab cycle_all -1
+bind o split right 0.5
+bind u split bottom 0.5
+bind s floating toggle
+bind f fullscreen toggle
+bind p pseudotile toggle
+bind r remove
+bind Tab cycle_all +1
+bind Shift-Tab cycle_all -1
 
 tag_names=( {1..9} )
 tag_keys=( {1..9} )
@@ -64,13 +71,13 @@ hc rename default "${tag_names[0]}" || true
 for i in "${!tag_names[@]}"; do
   hc add "${tag_names[$i]}" || true
   key="${tag_keys[$i]}"
-  hc keybind "$Mod-$key" use_index "$i"
-  hc keybind "$Mod-Shift-$key" move_index "$i"
+  bind "$key" use_index "$i"
+  bind "Shift-$key" move_index "$i"
 done
 
-hc mousebind $Mod-Button1 move
-hc mousebind $Mod-Button3 resize
-hc mousebind $Mod-Button2 zoom
+hc mousebind Mod4-Button1 move
+hc mousebind Mod4-Button3 resize
+hc mousebind Mod4-Button2 zoom
 
 hc rule focus=on
 hc rule windowtype~'_NET_WM_WINDOW_TYPE_(DIALOG|UTILITY|SPLASH)' floating=on
@@ -101,4 +108,10 @@ fi
 if command -v dunst >/dev/null 2>&1; then
   pkill -u "$USER" -x dunst >/dev/null 2>&1 || true
   dunst >/dev/null 2>&1 &
+fi
+
+# First login (empty tag): open a terminal so a Super-stealing host still
+# leaves a usable window. Skip on reload when clients already exist.
+if ! herbstclient compare tags.focus.client_count gt 0 2>/dev/null; then
+  hc spawn "$TERMINAL"
 fi
