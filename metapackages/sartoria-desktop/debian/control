@@ -31,6 +31,9 @@ Depends: herbstluftwm,
          ca-certificates,
          curl,
          gnupg,
+         firmware-amd-graphics,
+         elogind,
+         libpam-elogind,
          ${misc:Depends}
 Recommends: xlibre, xlibre-archive-keyring
 Description: Sartoria desktop metapackage

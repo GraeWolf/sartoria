@@ -340,7 +340,7 @@ chroot "$TARGET" /usr/sbin/update-initramfs -u || true
 if chroot "$TARGET" id "$USERNAME" >/dev/null 2>&1; then
   chroot "$TARGET" userdel -r "$USERNAME" >/dev/null 2>&1 || true
 fi
-chroot "$TARGET" useradd -m -s /bin/bash -G sudo,audio,video,plugdev "$USERNAME"
+chroot "$TARGET" useradd -m -s /bin/bash -G sudo,audio,video,render,input,plugdev "$USERNAME"
 echo "${USERNAME}:${PASS1}" | chroot "$TARGET" chpasswd
 chroot "$TARGET" passwd -l root >/dev/null
 if [[ -x "$TARGET/usr/lib/sartoria/seed-user-config" ]]; then

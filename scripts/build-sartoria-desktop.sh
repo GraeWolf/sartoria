@@ -26,7 +26,9 @@ mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/usr/share/keyrings" \
   "$STAGE/usr/share/fonts/truetype/sartoria" \
   "$STAGE/etc/apt/sources.list.d" \
-  "$STAGE/etc/skel/.config"
+  "$STAGE/etc/skel/.config" \
+  "$STAGE/etc/X11/xorg.conf.d" \
+  "$STAGE/etc/modprobe.d"
 
 # Data
 cp -a "$ROOT/config/herbstluftwm" "$ROOT/config/polybar" "$ROOT/config/picom" \
@@ -47,6 +49,10 @@ install -m 0755 "$ROOT/config/sartoria-cli/sartoria-session" "$STAGE/usr/bin/sar
 install -m 0755 "$ROOT/metapackages/sartoria-desktop/seed-user-config" \
   "$STAGE/usr/lib/sartoria/seed-user-config"
 
+install -m 0644 "$ROOT/config/x11/xorg.conf.d/10-igpu.conf" \
+  "$STAGE/etc/X11/xorg.conf.d/10-igpu.conf"
+install -m 0644 "$ROOT/config/modprobe.d/sartoria-hybrid.conf" \
+  "$STAGE/etc/modprobe.d/sartoria-hybrid.conf"
 install -m 0644 "$ROOT/metapackages/sartoria-desktop/xlibre-debian.sources" \
   "$STAGE/etc/apt/sources.list.d/xlibre-debian.sources"
 
@@ -77,7 +83,7 @@ Priority: optional
 Architecture: all
 Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
 Installed-Size: $installed_kb
-Depends: herbstluftwm, xinit, alacritty, polybar, rofi, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg
+Depends: herbstluftwm, xinit, alacritty, polybar, rofi, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, elogind, libpam-elogind
 Recommends: xlibre, xlibre-archive-keyring
 Homepage: https://github.com/kmccuddy/sartoria
 Description: Sartoria desktop metapackage

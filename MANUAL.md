@@ -36,6 +36,8 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 1. Boot.
 2. Log in on tty1 with the user created at install time.
 3. You get a shell. Run `startx` for herbstluftwm. If X fails you stay logged in; check `~/.local/share/xorg/Xorg.0.log` or `/var/log/Xorg.0.log`.
+
+Hybrid AMD/NVIDIA (or Intel/NVIDIA): the panel is on the iGPU. Install `firmware-amd-graphics` (or `firmware-misc-nonfree` for i915), add yourself to `video` and `render`, then `sudo modprobe amdgpu` and `startx` again. `nouveau` is blacklisted until `sartoria-nvidia`. `/tmp/.X11-unix` must be mode `1777` (x11-common).
 4. Super+Return (or **Alt+Return** if Super is eaten by the host) opens a terminal. Super+Space / Alt+Space opens the launcher.
 
 SSH sessions and other VTs do not start X.
