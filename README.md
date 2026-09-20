@@ -4,7 +4,7 @@ A personal opinionated Linux distribution. Devuan remix, own ISO, keyboard-first
 
 Sartoria is omakase: finished defaults, no account to install or boot. It is not Arch, not systemd, not Hyprland, not Wayland, and not a post-install gist.
 
-**Status:** Phase F on this G15 (F1 font done; F-suspend 0.0.7 kbd backlight after s2idle; F2 Brave Origin in tree). Phase E (hybrid Prime) is done. v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
+**Status:** Phase F on this G15 (F1 font done; F-suspend 0.0.7 kbd backlight after s2idle; F2 Brave Origin in tree; F3 LibreOffice from Excalibur). Phase E (hybrid Prime) is done. v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
 
 Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.md`](MANUAL.md).
 
@@ -17,7 +17,7 @@ Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.
 | Display | XLibre (not Xorg, not Wayland) |
 | WM | herbstluftwm |
 | Installer | text TUI, installer-first ISO |
-| Packaging | apt/dpkg, `sartoria-desktop`, `sartoria-nvidia`, `sartoria-origin` |
+| Packaging | apt/dpkg, `sartoria-desktop`, `sartoria-nvidia`, `sartoria-origin`, `sartoria-office` |
 | v0.1 gate | ISO installs into a VM and boots the session |
 
 ## What it is not
@@ -45,6 +45,7 @@ BUILD_VARIANT=test ./scripts/lab-build-iso.sh
 ./scripts/test-iso.sh
 ./scripts/build-sartoria-nvidia.sh
 ./scripts/build-sartoria-origin.sh
+./scripts/build-sartoria-office.sh
 ```
 
 See [`lab/README.md`](lab/README.md) for credentials and firmware notes.

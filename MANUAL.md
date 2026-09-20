@@ -110,6 +110,18 @@ sudo apt-get install brave-origin
 
 `sartoria-origin` enables Brave’s signed release repo and pins `brave-origin` in; `brave-browser` is apt-priority -1. Super+b runs `sartoria-browser` (the Origin binary is `brave-origin-stable`). Reload herbstluftwm (Super+Shift+r) if the bind was missing.
 
+## Office (LibreOffice)
+
+Not on the installer ISO. From Excalibur only (no third-party repo). gtk3 VCL is required so dialogs float in herbstluftwm. Do not install the backports 26.x build unless you mean to.
+
+```bash
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-office.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.6_all.deb ./lab/cache/sartoria-office_0.0.1_all.deb
+```
+
+Launch from rofi (Super+Space). Writer/Calc/Impress tile. File and options dialogs should float; Super+s toggles floating if one does not. Reload herbstluftwm (Super+Shift+r) after install. Existing `~/.config/herbstluftwm/autostart` is not overwritten.
+
 ## Rescue (development only)
 
 XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is allowed **on the lab machine** while debugging. Sartoria still ships XLibre.

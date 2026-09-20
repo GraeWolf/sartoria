@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.4}"
+VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.6}"
 PKG=sartoria-desktop
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"

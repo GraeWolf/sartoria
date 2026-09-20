@@ -90,6 +90,9 @@ hc rule class=Alacritty focus=on
 hc rule class~'^[Bb]rave-origin$' focus=on
 hc rule class=Rofi manage=off
 hc rule class=dunst manage=off
+# LibreOffice: gtk3 VCL + the DIALOG/UTILITY/SPLASH rule above. Do not
+# add class=Soffice or class=libreoffice — the document first-maps with
+# those classes and would stay floating after it becomes libreoffice-writer.
 
 hc unlock
 

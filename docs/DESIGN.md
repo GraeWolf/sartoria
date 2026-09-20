@@ -40,11 +40,11 @@ The name is Italian for tailoring: one cut, not a kit.
 | Session start | Console login on tty1, then **manual `startx`**. Auto-startx is off so a failed X (hybrid GPU) does not log you out. No display manager |
 | Desktop stack | alacritty, polybar, rofi, dunst, picom |
 | v0.1 apps | Session minimum only (no browser, office, or file manager) |
-| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) |
+| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) + `sartoria-office` (LibreOffice; not on the v0.1 ISO) |
 | Package freshness | Excalibur + `excalibur-backports` + pinned extra repos |
 | NVIDIA | Phase E. Hybrid laptop first (Prime offload). Desktop dGPU later. Not on the v0.1 ISO. |
 | Browser (later) | Brave Origin via `sartoria-origin` (AI stays out of the browser). Not on the v0.1 ISO. |
-| Office (later) | LibreOffice |
+| Office (later) | LibreOffice via `sartoria-office` from Excalibur. Not on the v0.1 ISO. |
 | AI | None in v0.1. OS must work with zero AI config. Optional slot later |
 | Audience | Personal first; public repo is fine; no community SLA |
 | Daily-driver target | This G15 (hybrid AMD+NVIDIA). VM remains the ISO gate. |
@@ -138,7 +138,7 @@ Default bindings (v1):
 | Super+s | toggle floating (dialogs) |
 | Super+Shift+e | exit session |
 
-Floating rules for LibreOffice/Steam dialogs come when those apps land.
+LibreOffice dialogs float via gtk3 VCL and the generic DIALOG/UTILITY/SPLASH rule. Do not add `class=Soffice` or `class=libreoffice`: the document first-maps with those classes and stays floating. Steam dialog rules come when `sartoria-games` lands.
 
 ### NVIDIA (Phase E; not a v0.1 ISO gate)
 
@@ -224,7 +224,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F2.** Brave Origin. `sartoria-origin` ships the pinned signed Brave apt repo. Install `brave-origin` (not `brave-browser`). AI stays out of the browser. Not a v0.1 ISO gate.
 
-**F3.** LibreOffice from Excalibur. Floating rules for its dialogs. No third-party repo.
+**F3.** LibreOffice from Excalibur. `sartoria-office` depends on `libreoffice` + `libreoffice-gtk3`. Dialogs float via gtk3 VCL and the generic DIALOG rule. No third-party repo. Not a v0.1 ISO gate.
 
 **F4.** Remaining daily bits (file manager, screenshots, laptop DPI if the 96 DPI default is wrong) once F1–F3 do not block work.
 
@@ -278,6 +278,7 @@ sartoria/
     sartoria-live/
     sartoria-nvidia/
     sartoria-origin/
+    sartoria-office/
     sartoria-ai/
     sartoria-games/
   config/                 # shipped under /usr/share/sartoria

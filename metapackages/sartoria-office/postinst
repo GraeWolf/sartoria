@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+  echo "sartoria-office: LibreOffice from Excalibur (gtk3 VCL)." >&2
+  echo "sartoria-office: reload herbstluftwm (Super+Shift+r) for dialog floating rules." >&2
+fi
+exit 0

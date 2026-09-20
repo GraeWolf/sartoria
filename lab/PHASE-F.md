@@ -11,7 +11,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | F1 | Alacritty / Nerd Font actually installed; monospace, not DejaVu Sans | done (`sartoria-desktop` 0.0.3 on voyager) |
 | F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.6 s2idle+keys work; 0.0.6 zeroed kbd backlight (USB reset). 0.0.7 restores LED |
 | F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | package in tree; install on voyager needs sudo |
-| F3 | LibreOffice from Excalibur + floating dialog rules | not started |
+| F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
 | F4 | Remaining daily bits (file manager, screenshots, laptop DPI) | not started |
 | F5 | Optional `sartoria-games` | not started |
 | F6 | Laptop LUKS profile on a **spare** disk / second install | not started |
@@ -145,9 +145,30 @@ sudo apt-get install brave-origin
 
 Exit F2: `dpkg -s brave-origin` is `ii`, `command -v brave-origin-stable`, `apt-cache policy brave-browser` is not installable (pin -1), Super+b opens Origin.
 
+## F3 — LibreOffice
+
+`sartoria-office` 0.0.1: Depends on Excalibur `libreoffice` + `libreoffice-gtk3`. No extra apt source. gtk3 VCL is what makes file/options dialogs set a window type (or a fixed size) herbstluftwm can float.
+
+`sartoria-desktop` 0.0.6: no extra LibreOffice class rules. gtk3 VCL makes File → Open a `_NET_WM_WINDOW_TYPE_DIALOG` (`WM_CLASS` soffice/Soffice, role `GtkFileChooserDialog`), which the existing DIALOG/UTILITY/SPLASH rule already floats. Writer/Calc stay tiled.
+
+Do not add `class=Soffice` or `class=libreoffice`: the document first-maps with those classes and stays floating after it becomes `libreoffice-writer`. Same sticky-float if you match `libreoffice-*` + `fixedsize`.
+
+Excalibur candidate is `4:25.2.3-2+deb13u6` (priority 500). Backports has 26.8 at priority 100; do not pull it.
+
+Not on the v0.1 ISO.
+
+```bash
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-office.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.6_all.deb ./lab/cache/sartoria-office_0.0.1_all.deb
+```
+
+`seed-user-config` does not overwrite `~/.config/herbstluftwm/autostart`. If that file still has `class=Soffice` or `class=libreoffice` floating rules, remove them and Super+Shift+r.
+
+Exit F3: `dpkg -s libreoffice` is `ii`, `dpkg -s libreoffice-gtk3` is `ii`, Writer tiles, File → Open floats (or Super+s if a dialog is missed).
+
 ## Later
 
-- **F3.** `libreoffice` from Excalibur. herbstluftwm floating rules for dialogs.
 - **F4.** Daily bits only after the terminal, browser, and office do not block work.
 - **F5.** `sartoria-games` after NVIDIA; optional.
 - **F6.** LUKS installer profile. Prove on a spare disk. v0.1 stays whole-disk ext4, no encryption.
