@@ -83,7 +83,7 @@ Priority: optional
 Architecture: all
 Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
 Installed-Size: $installed_kb
-Depends: herbstluftwm, xinit, alacritty, polybar, rofi, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, elogind, libpam-elogind
+Depends: herbstluftwm, xinit, alacritty, polybar, rofi, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, firmware-iwlwifi, firmware-realtek, firmware-mediatek, firmware-misc-nonfree, firmware-atheros, firmware-brcm80211, wpasupplicant, wireless-regdb, iw, rfkill, elogind, libpam-elogind
 Recommends: xlibre, xlibre-archive-keyring
 Homepage: https://github.com/kmccuddy/sartoria
 Description: Sartoria desktop metapackage
