@@ -20,6 +20,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 - Display is XLibre. There is no Wayland session.
 - Window manager is herbstluftwm (manual tiling). You split frames; the OS does not pretend to be Hyprland.
 - One theme. One terminal (alacritty). One launcher (rofi). One bar (polybar).
+- Terminal font is JetBrainsMono Nerd Font Mono. If letters run together or show random gaps, Alacritty is not using that family (`fc-match "JetBrainsMono Nerd Font Mono"` must not be DejaVu Sans).
 - AI is not part of the OS in v0.1. The machine must work with zero API keys.
 
 ## What we are not
@@ -99,6 +100,8 @@ XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is all
 Super is the product modkey. **Alt is bound to the same actions** so a host compositor (Omarchy/Hyprland) that owns Super can still drive a Sartoria VM. Click the VM window, then use Alt.
 
 If Super is stolen and no terminal is open: SSH in and run `DISPLAY=:0 herbstclient spawn alacritty`, or log in on a guest VT and run that. A first login with an empty tag also spawns one terminal.
+
+If Alacritty glyphs collide or have holes between letters, the Nerd Font is missing and the terminal fell back to a proportional font. Install/rebuild `sartoria-desktop` (≥ 0.0.3), run `fc-cache -f`, point `~/.config/alacritty/alacritty.toml` at `JetBrainsMono Nerd Font Mono`, and open a new terminal.
 
 | Key | Action |
 | --- | --- |

@@ -217,9 +217,25 @@ Real NVIDIA machine. `sartoria-nvidia`. **Hybrid laptop first** (this G15); desk
 
 ### Phase F — Daily-driver extras
 
-Brave Origin, LibreOffice, optional `sartoria-games`, optional `sartoria-ai`, laptop LUKS profile.
+Hardware session exists (Phase E). This phase is the rest of “willing to daily-drive this G15.” Firefox ESR may stay until Origin is packaged. Do **not** LUKS this laptop’s current disk first.
 
-**Exit F:** Willing to daily-drive on hardware.
+**F1.** Terminal font. Alacritty must use a real monospace (`JetBrainsMono Nerd Font Mono`), not a proportional fallback. `fc-match "JetBrainsMono Nerd Font Mono"` is that family. Letters must not run together or show random gaps.
+
+**F2.** Brave Origin. Pinned signed Brave apt repo. Package `brave-origin`. AI stays out of the browser. Not a v0.1 ISO gate.
+
+**F3.** LibreOffice from Excalibur. Floating rules for its dialogs. No third-party repo.
+
+**F4.** Remaining daily bits (file manager, screenshots, laptop DPI if the 96 DPI default is wrong) once F1–F3 do not block work.
+
+**F5.** Optional `sartoria-games`. After NVIDIA. Not in the base ISO.
+
+**F6.** Laptop LUKS profile. Destructive. Prove on a spare disk / second install, **not** voyager’s current root. v0.1 stays unencrypted whole-disk.
+
+**F7.** Optional `sartoria-ai`. Last. OS must work with zero AI config.
+
+**Exit F:** Willing to daily-drive on this G15.
+
+Not this gate (leftover from E): desktop dGPU, reverse-PRIME HDMI, `nvidia-persistenced` as a required daemon, `sartoria-nvidia` on the v0.1 ISO.
 
 ---
 

@@ -3,18 +3,26 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.2}"
+VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.3}"
 PKG=sartoria-desktop
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"
 DEB="$OUTDIR/${PKG}_${VERSION}_all.deb"
 KEY_URL="https://mrchicken.nexussfan.cz/publickey.asc"
+FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip"
 FONT_ZIP="$CACHE/JetBrainsMonoNerdFont.zip"
+FONT_FILES=(
+  JetBrainsMonoNerdFont-Regular.ttf
+  JetBrainsMonoNerdFont-Bold.ttf
+  JetBrainsMonoNerdFontMono-Regular.ttf
+  JetBrainsMonoNerdFontMono-Bold.ttf
+)
 
 need tar
 need gzip
 need find
 need curl
+need python3
 
 rm -rf "$STAGE"
 mkdir -p "$STAGE/DEBIAN" \
@@ -25,6 +33,7 @@ mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/usr/share/doc/$PKG" \
   "$STAGE/usr/share/keyrings" \
   "$STAGE/usr/share/fonts/truetype/sartoria" \
+  "$STAGE/etc/fonts/conf.d" \
   "$STAGE/etc/apt/sources.list.d" \
   "$STAGE/etc/skel/.config" \
   "$STAGE/etc/X11/xorg.conf.d" \
@@ -55,22 +64,47 @@ install -m 0644 "$ROOT/config/modprobe.d/sartoria-hybrid.conf" \
   "$STAGE/etc/modprobe.d/sartoria-hybrid.conf"
 install -m 0644 "$ROOT/metapackages/sartoria-desktop/xlibre-debian.sources" \
   "$STAGE/etc/apt/sources.list.d/xlibre-debian.sources"
+install -m 0644 "$ROOT/config/fontconfig/50-sartoria-fonts.conf" \
+  "$STAGE/etc/fonts/conf.d/50-sartoria-fonts.conf"
 
 curl -fsSL "$KEY_URL" | gpg --dearmor > "$STAGE/usr/share/keyrings/sartoria-xlibre.pgp"
 chmod 0644 "$STAGE/usr/share/keyrings/sartoria-xlibre.pgp"
 
-if [[ -s "$FONT_ZIP" ]]; then
-  unzip -o -j "$FONT_ZIP" \
-    JetBrainsMonoNerdFont-Regular.ttf \
-    JetBrainsMonoNerdFont-Bold.ttf \
-    -d "$STAGE/usr/share/fonts/truetype/sartoria" >/dev/null
+mkdir -p "$CACHE"
+if [[ ! -s "$FONT_ZIP" ]]; then
+  echo "downloading JetBrainsMono Nerd Font"
+  curl -fL --retry 3 --retry-delay 2 -o "$FONT_ZIP.part" "$FONT_URL"
+  mv "$FONT_ZIP.part" "$FONT_ZIP"
 fi
+python3 - "$FONT_ZIP" "$STAGE/usr/share/fonts/truetype/sartoria" "${FONT_FILES[@]}" <<'PY'
+import shutil, sys, zipfile
+from pathlib import Path
+zip_path, dest = Path(sys.argv[1]), Path(sys.argv[2])
+want = sys.argv[3:]
+dest.mkdir(parents=True, exist_ok=True)
+with zipfile.ZipFile(zip_path) as zf:
+    names = {Path(n).name: n for n in zf.namelist()}
+    missing = [n for n in want if n not in names]
+    if missing:
+        raise SystemExit("nerd font zip missing: " + ", ".join(missing))
+    for n in want:
+        with zf.open(names[n]) as src, open(dest / n, "wb") as out:
+            shutil.copyfileobj(src, out)
+PY
+for f in "${FONT_FILES[@]}"; do
+  [[ -s "$STAGE/usr/share/fonts/truetype/sartoria/$f" ]] || die "failed to extract $f"
+done
 
 cat > "$STAGE/usr/share/doc/$PKG/copyright" <<'EOF'
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Files: *
 Copyright: Kelly McCuddy
 License: MIT
+
+Files: usr/share/fonts/truetype/sartoria/*
+Copyright: 2020 The JetBrains Mono Project Authors
+           2014-2025 Ryan L McIntyre (Nerd Fonts)
+License: OFL-1.1
 EOF
 
 # Control

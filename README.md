@@ -4,7 +4,7 @@ A personal opinionated Linux distribution. Devuan remix, own ISO, keyboard-first
 
 Sartoria is omakase: finished defaults, no account to install or boot. It is not Arch, not systemd, not Hyprland, not Wayland, and not a post-install gist.
 
-**Status:** Phase E complete on this G15 (hybrid Prime offload). v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
+**Status:** Phase F started on this G15 (daily-driver extras; F1 is the Alacritty font). Phase E (hybrid Prime) is done. v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
 
 Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.md`](MANUAL.md).
 

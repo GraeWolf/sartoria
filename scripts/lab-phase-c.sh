@@ -5,7 +5,7 @@ set -euo pipefail
 export LAB_NAME=sartoria-c
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-DEB="${DEB:-$CACHE/sartoria-desktop_0.0.2_all.deb}"
+DEB="${DEB:-$CACHE/sartoria-desktop_0.0.3_all.deb}"
 
 ssh_c() {
   ssh \

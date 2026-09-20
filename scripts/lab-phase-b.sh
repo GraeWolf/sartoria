@@ -83,6 +83,8 @@ mkdir -p "$HOME/.local/share/fonts"
 unzip -o -j /tmp/JetBrainsMonoNerdFont.zip \
   JetBrainsMonoNerdFont-Regular.ttf \
   JetBrainsMonoNerdFont-Bold.ttf \
+  JetBrainsMonoNerdFontMono-Regular.ttf \
+  JetBrainsMonoNerdFontMono-Bold.ttf \
   -d "$HOME/.local/share/fonts"
 fc-cache -f "$HOME/.local/share/fonts" >/dev/null
 fc-list | grep -i 'JetBrains' | head -5
