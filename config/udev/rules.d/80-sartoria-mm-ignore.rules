@@ -1,0 +1,6 @@
+# 80-mm-candidate.rules marks every net interface as a modem candidate.
+# ModemManager then probes PCI ethernet/Wi-Fi, logs "not supported by any
+# plugin", and (with no syslog daemon) those lines land on tty1.
+ACTION=="add|change", SUBSYSTEM=="net", KERNEL=="en*|eth*|wl*|wlan*", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="pci", ATTR{class}=="0x020000", ENV{ID_MM_DEVICE_IGNORE}="1"
+ACTION=="add|change", SUBSYSTEM=="pci", ATTR{class}=="0x028000", ENV{ID_MM_DEVICE_IGNORE}="1"

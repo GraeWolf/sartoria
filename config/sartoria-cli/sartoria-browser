@@ -1,0 +1,11 @@
+#!/bin/sh
+# Product browser. Origin only — never the AI-capable brave-browser binary.
+# The Origin package puts brave-origin-stable on PATH (Chromium-style).
+for cmd in brave-origin-stable brave-origin; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    exec "$cmd" "$@"
+  fi
+done
+echo "sartoria: brave-origin is not installed." >&2
+echo "  sudo apt-get update && sudo apt-get install brave-origin" >&2
+exit 1

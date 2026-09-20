@@ -44,6 +44,7 @@ Depends: herbstluftwm,
          rfkill,
          elogind,
          libpam-elogind,
+         rsyslog,
          ${misc:Depends}
 Recommends: xlibre, xlibre-archive-keyring
 Description: Sartoria desktop metapackage

@@ -40,10 +40,10 @@ The name is Italian for tailoring: one cut, not a kit.
 | Session start | Console login on tty1, then **manual `startx`**. Auto-startx is off so a failed X (hybrid GPU) does not log you out. No display manager |
 | Desktop stack | alacritty, polybar, rofi, dunst, picom |
 | v0.1 apps | Session minimum only (no browser, office, or file manager) |
-| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) |
+| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) |
 | Package freshness | Excalibur + `excalibur-backports` + pinned extra repos |
 | NVIDIA | Phase E. Hybrid laptop first (Prime offload). Desktop dGPU later. Not on the v0.1 ISO. |
-| Browser (later) | Brave Origin (AI stays out of the browser) |
+| Browser (later) | Brave Origin via `sartoria-origin` (AI stays out of the browser). Not on the v0.1 ISO. |
 | Office (later) | LibreOffice |
 | AI | None in v0.1. OS must work with zero AI config. Optional slot later |
 | Audience | Personal first; public repo is fine; no community SLA |
@@ -84,7 +84,7 @@ Do not fork the archive. Do not move the whole OS to Freia (testing) or Ceres (s
 ### Allowed extra repos (pinned, documented, signed)
 
 1. XLibre Devuan repo (`xlibre-debian/devuan`). Excalibur **requires backports** for this repo.
-2. Later: Brave’s official repo for Origin.
+2. Brave’s official release repo for Origin (`sartoria-origin`). Pin allows `brave-origin` + `brave-keyring`; `brave-browser` is priority -1.
 3. Later: NVIDIA if Devuan’s `nvidia-driver` is insufficient.
 
 Rollback of XLibre to Xorg is a **development rescue**, not a shipped session.
@@ -128,6 +128,7 @@ Default bindings (v1):
 | --- | --- |
 | Super+Return | terminal (alacritty) |
 | Super+Space | launcher (rofi) |
+| Super+b | browser (`sartoria-browser` → Origin). Bound only if the helper exists. |
 | Super+q | close window |
 | Super+1..9 | use tag |
 | Super+Shift+1..9 | move window to tag |
@@ -149,7 +150,7 @@ Locked hybrid behaviour:
 
 - **On-demand Prime render offload.** The session stays on the iGPU. NVIDIA is an offload source for opted-in clients.
 - X: `modesetting` + `PrimaryGPU yes` on amdgpu/i915 (`10-igpu.conf`). NVIDIA DDX matches `nvidia-drm` with `AllowEmptyInitialConfiguration` and `PrimaryGPU no`. `AllowNVIDIAGPUScreens` on.
-- Kernel: proprietary `nvidia-kernel-dkms` 550 from Excalibur (not the open flavor: 550-open fails to build on 6.12.107). `nvidia-drm.modeset=1`. `nouveau` stays blacklisted. Do not set `NVreg_PreserveVideoMemoryAllocations` (breaks Optimus).
+- Kernel: proprietary `nvidia-kernel-dkms` 550 from Excalibur (not the open flavor: 550-open fails to build on 6.12.107). Module options use Debian’s `nvidia-current` name. `nouveau` stays blacklisted. s2idle uses `NVreg_EnableS0ixPowerManagement=1` (VRAM self-refresh). Do not use `PreserveVideoMemoryAllocations` or elogind `HandleNvidiaSleep` on this G15. X: `AutoAddGPU false` so modesetting does not steal the NVIDIA DRM node from the nvidia DDX.
 - GLX: Mesa remains the session default so herbstluftwm/alacritty/picom do not go through NVIDIA GL (XLibre + Prime black windows). NVIDIA GLX only via `sartoria nvidia <cmd>` (`__NV_PRIME_RENDER_OFFLOAD=1`, `__GLX_VENDOR_LIBRARY_NAME=nvidia`).
 - picom stays on the `xrender` backend.
 - Do not run `nvidia-xconfig`, do not install Bumblebee, do not make NVIDIA the primary GPU. A MUX / dGPU-drives-panel mode is a later option, not the E exit.
@@ -221,7 +222,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F1.** Terminal font. Alacritty must use a real monospace (`JetBrainsMono Nerd Font Mono`), not a proportional fallback. `fc-match "JetBrainsMono Nerd Font Mono"` is that family. Letters must not run together or show random gaps.
 
-**F2.** Brave Origin. Pinned signed Brave apt repo. Package `brave-origin`. AI stays out of the browser. Not a v0.1 ISO gate.
+**F2.** Brave Origin. `sartoria-origin` ships the pinned signed Brave apt repo. Install `brave-origin` (not `brave-browser`). AI stays out of the browser. Not a v0.1 ISO gate.
 
 **F3.** LibreOffice from Excalibur. Floating rules for its dialogs. No third-party repo.
 
@@ -235,7 +236,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **Exit F:** Willing to daily-drive on this G15.
 
-Not this gate (leftover from E): desktop dGPU, reverse-PRIME HDMI, `nvidia-persistenced` as a required daemon, `sartoria-nvidia` on the v0.1 ISO.
+Not this gate (leftover from E): desktop dGPU, reverse-PRIME HDMI, `sartoria-nvidia` on the v0.1 ISO. `nvidia-persistenced` stays disabled on hybrid (runtime D3). Suspend is elogind s2idle plus `/usr/libexec/system-sleep/sartoria-nvidia` (no `HandleNvidiaSleep` / chvt).
 
 ---
 
@@ -276,6 +277,7 @@ sartoria/
     sartoria-desktop/
     sartoria-live/
     sartoria-nvidia/
+    sartoria-origin/
     sartoria-ai/
     sartoria-games/
   config/                 # shipped under /usr/share/sartoria

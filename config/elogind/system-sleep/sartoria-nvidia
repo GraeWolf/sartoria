@@ -1,0 +1,90 @@
+#!/bin/sh
+# elogind sleep hook for this G15.
+# Do not write /proc/driver/nvidia/suspend (hung: fans, no s2idle).
+# Do not toggle USB authorized when the keyboard is already back: that
+# re-enumerates hid_asus and zeros asus::kbd_backlight.
+# $1 = pre|post  $2 = suspend|hibernate|...
+KBD_VENDOR=0b05
+KBD_PRODUCT=19b6
+XHCI=0000:07:00.3
+LED=/sys/class/leds/asus::kbd_backlight/brightness
+SAVE=/run/sartoria-kbd-backlight
+
+log() {
+  logger -t sartoria-nvidia -- "$@" 2>/dev/null || true
+}
+
+asus_kbd_present() {
+  for d in /sys/bus/usb/devices/*; do
+    [ -f "$d/idVendor" ] && [ -f "$d/idProduct" ] || continue
+    [ "$(cat "$d/idVendor")" = "$KBD_VENDOR" ] || continue
+    [ "$(cat "$d/idProduct")" = "$KBD_PRODUCT" ] || continue
+    return 0
+  done
+  return 1
+}
+
+save_backlight() {
+  if [ -r "$LED" ]; then
+    cat "$LED" > "$SAVE" 2>/dev/null || true
+  fi
+}
+
+restore_backlight() {
+  n=0
+  while [ ! -w "$LED" ] && [ "$n" -lt 5 ]; do
+    sleep 1
+    n=$((n + 1))
+  done
+  val=3
+  if [ -s "$SAVE" ]; then
+    val=$(cat "$SAVE")
+  fi
+  case "$val" in
+    0|1|2|3) ;;
+    *) val=3 ;;
+  esac
+  if [ -w "$LED" ]; then
+    echo "$val" > "$LED" 2>/dev/null || true
+    log "kbd backlight -> $val"
+  fi
+}
+
+reset_xhci_if_kbd_gone() {
+  asus_kbd_present && return 0
+  [ -e "/sys/bus/pci/drivers/xhci_hcd/$XHCI" ] || return 0
+  log "ASUS keyboard missing; reset xhci $XHCI"
+  echo "$XHCI" > /sys/bus/pci/drivers/xhci_hcd/unbind 2>/dev/null || true
+  echo "$XHCI" > /sys/bus/pci/drivers/xhci_hcd/bind 2>/dev/null || true
+}
+
+kick_i2c_hid_if_missing() {
+  if grep -q ASUE120D /sys/class/input/*/name 2>/dev/null; then
+    return 0
+  fi
+  drv=/sys/bus/i2c/drivers/i2c_hid_acpi
+  [ -d "$drv" ] || return 0
+  log "i2c touchpad missing; rebind i2c_hid_acpi"
+  for link in "$drv"/*; do
+    [ -e "$link" ] || continue
+    name=$(basename "$link")
+    case "$name" in
+      bind|unbind|uevent|module) continue ;;
+    esac
+    echo "$name" > "$drv/unbind" 2>/dev/null || true
+    echo "$name" > "$drv/bind" 2>/dev/null || true
+  done
+}
+
+case "$1" in
+  pre)
+    save_backlight
+    ;;
+  post)
+    sleep 1
+    reset_xhci_if_kbd_gone
+    kick_i2c_hid_if_missing
+    restore_backlight
+    ;;
+esac
+exit 0

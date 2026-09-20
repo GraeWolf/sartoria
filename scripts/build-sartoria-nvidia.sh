@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_NVIDIA_VERSION:-0.0.2}"
+VERSION="${SARTORIA_NVIDIA_VERSION:-0.0.7}"
 PKG=sartoria-nvidia
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"
@@ -17,14 +17,24 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/usr/bin" \
   "$STAGE/usr/share/doc/$PKG" \
+  "$STAGE/usr/libexec/system-sleep" \
   "$STAGE/etc/X11/xorg.conf.d" \
-  "$STAGE/etc/modprobe.d"
+  "$STAGE/etc/modprobe.d" \
+  "$STAGE/etc/elogind/sleep.conf.d" \
+  "$STAGE/etc/default/grub.d" \
+  "$STAGE/var/lib/nvidia"
 
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-nvidia-run" "$STAGE/usr/bin/sartoria-nvidia-run"
+install -m 0755 "$ROOT/config/elogind/system-sleep/sartoria-nvidia" \
+  "$STAGE/usr/libexec/system-sleep/sartoria-nvidia"
 install -m 0644 "$ROOT/config/x11/xorg.conf.d/20-nvidia-hybrid.conf" \
   "$STAGE/etc/X11/xorg.conf.d/20-nvidia-hybrid.conf"
 install -m 0644 "$ROOT/config/modprobe.d/sartoria-nvidia.conf" \
   "$STAGE/etc/modprobe.d/sartoria-nvidia.conf"
+install -m 0644 "$ROOT/config/elogind/sleep.conf.d/20-sartoria-nvidia.conf" \
+  "$STAGE/etc/elogind/sleep.conf.d/20-sartoria-nvidia.conf"
+install -m 0644 "$ROOT/config/grub.d/sartoria-nvidia.cfg" \
+  "$STAGE/etc/default/grub.d/sartoria-nvidia.cfg"
 
 cat > "$STAGE/usr/share/doc/$PKG/copyright" <<'EOF'
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
@@ -42,7 +52,7 @@ Priority: optional
 Architecture: all
 Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
 Installed-Size: $installed_kb
-Depends: sartoria-desktop (>= 0.0.2), nvidia-driver, nvidia-kernel-dkms, linux-headers-amd64, firmware-nvidia-gsp, nvidia-smi, nvidia-modprobe, mesa-utils, pciutils
+Depends: sartoria-desktop (>= 0.0.4), nvidia-driver, nvidia-kernel-dkms, linux-headers-amd64, firmware-nvidia-gsp, nvidia-smi, nvidia-modprobe, mesa-utils, pciutils
 Conflicts: bumblebee, bumblebee-nvidia
 Recommends: nvidia-vulkan-icd
 Homepage: https://github.com/kmccuddy/sartoria

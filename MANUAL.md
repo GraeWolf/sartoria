@@ -89,7 +89,26 @@ dpkg --configure -a
 rm -f /usr/sbin/policy-rc.d'
 ```
 
+`sartoria-nvidia` (≥ 0.0.3) then disables the persistenced sysv service. Persistence mode is not used on hybrid laptops (it blocks runtime D3). Do not re-enable it to “fix” a red `startpar` line; the package is supposed to stay off.
+
+This G15 only suspends as **s2idle** (not S3/deep). Lid close is handled by elogind. After `sartoria-nvidia` ≥ 0.0.6, reboot once. `grep EnableS0ixPowerManagement /proc/driver/nvidia/params` must be `1`. Do **not** set `NVreg_PreserveVideoMemoryAllocations` and do not enable elogind `HandleNvidiaSleep`: both hung this machine (black screen or fans-at-full, dead keyboard/trackpad). Debian’s module is `nvidia-current`; a `modules-load.d` line named `nvidia` prints `modprobe: FATAL: Module nvidia not found`. The keyboard is USB HID on the AMD xHCI; the touchpad is i2c-HID. Keyboard backlight is `asus::kbd_backlight` (0–3) via hid_asus. After resume it should return to the pre-suspend level; to set it now: `echo 3 | sudo tee /sys/class/leds/asus::kbd_backlight/brightness`. Hold the power button only as last resort.
+
 Default `glxinfo` must remain the iGPU (Mesa). picom uses xrender so the compositor does not need NVIDIA GL.
+
+Boot text on tty1: `nvidia-persistenced ... failed!` should be gone after 0.0.3. ModemManager lines about `03:00.0` / `04:00.0` are the ethernet and Wi‑Fi cards, not a modem; `sartoria-desktop` ≥ 0.0.4 ignores those devices and installs `rsyslog` so leftover daemon messages do not print on the login prompt.
+
+## Browser (Brave Origin)
+
+Not on the installer ISO. Firefox ESR may stay until Origin is installed. Do not install `brave-browser` (that product has AI).
+
+```bash
+./scripts/build-sartoria-origin.sh
+sudo apt-get install ./lab/cache/sartoria-origin_0.0.1_all.deb
+sudo apt-get update
+sudo apt-get install brave-origin
+```
+
+`sartoria-origin` enables Brave’s signed release repo and pins `brave-origin` in; `brave-browser` is apt-priority -1. Super+b runs `sartoria-browser` (the Origin binary is `brave-origin-stable`). Reload herbstluftwm (Super+Shift+r) if the bind was missing.
 
 ## Rescue (development only)
 
@@ -107,6 +126,7 @@ If Alacritty glyphs collide or have holes between letters, the Nerd Font is miss
 | --- | --- |
 | Super+Return | terminal (alacritty) |
 | Super+Space | launcher (rofi) |
+| Super+b | browser (Brave Origin, after `sartoria-origin`) |
 | Super+q | close window |
 | Super+Shift+e | exit session |
 | Super+1..9 | use tag |

@@ -8,7 +8,7 @@ Homepage: https://github.com/kmccuddy/sartoria
 
 Package: sartoria-nvidia
 Architecture: all
-Depends: sartoria-desktop (>= 0.0.2),
+Depends: sartoria-desktop (>= 0.0.4),
          nvidia-driver,
          nvidia-kernel-dkms,
          linux-headers-amd64,

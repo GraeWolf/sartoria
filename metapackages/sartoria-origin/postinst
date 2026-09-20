@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+  echo "sartoria-origin: Brave repo enabled (Origin only)." >&2
+  echo "sartoria-origin: sudo apt-get update && sudo apt-get install brave-origin" >&2
+  echo "sartoria-origin: then Super+b (reload herbstluftwm if the bind is missing)." >&2
+fi
+exit 0

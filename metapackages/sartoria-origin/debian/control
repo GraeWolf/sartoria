@@ -1,0 +1,19 @@
+Source: sartoria-origin
+Section: metapackages
+Priority: optional
+Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/kmccuddy/sartoria
+
+Package: sartoria-origin
+Architecture: all
+Depends: sartoria-desktop (>= 0.0.3),
+         ca-certificates,
+         ${misc:Depends}
+Recommends: brave-origin
+Conflicts: brave-browser
+Description: Sartoria Brave Origin apt overlay
+ Signed Brave apt source, Origin-only pin, and sartoria-browser
+ helper. Not on the v0.1 ISO. After install: apt-get update &&
+ apt-get install brave-origin. Do not install brave-browser.

@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.3}"
+VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.4}"
 PKG=sartoria-desktop
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"
@@ -37,7 +37,8 @@ mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/etc/apt/sources.list.d" \
   "$STAGE/etc/skel/.config" \
   "$STAGE/etc/X11/xorg.conf.d" \
-  "$STAGE/etc/modprobe.d"
+  "$STAGE/etc/modprobe.d" \
+  "$STAGE/etc/udev/rules.d"
 
 # Data
 cp -a "$ROOT/config/herbstluftwm" "$ROOT/config/polybar" "$ROOT/config/picom" \
@@ -62,6 +63,8 @@ install -m 0644 "$ROOT/config/x11/xorg.conf.d/10-igpu.conf" \
   "$STAGE/etc/X11/xorg.conf.d/10-igpu.conf"
 install -m 0644 "$ROOT/config/modprobe.d/sartoria-hybrid.conf" \
   "$STAGE/etc/modprobe.d/sartoria-hybrid.conf"
+install -m 0644 "$ROOT/config/udev/rules.d/80-sartoria-mm-ignore.rules" \
+  "$STAGE/etc/udev/rules.d/80-sartoria-mm-ignore.rules"
 install -m 0644 "$ROOT/metapackages/sartoria-desktop/xlibre-debian.sources" \
   "$STAGE/etc/apt/sources.list.d/xlibre-debian.sources"
 install -m 0644 "$ROOT/config/fontconfig/50-sartoria-fonts.conf" \
@@ -117,7 +120,7 @@ Priority: optional
 Architecture: all
 Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
 Installed-Size: $installed_kb
-Depends: herbstluftwm, xinit, alacritty, polybar, rofi, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, firmware-iwlwifi, firmware-realtek, firmware-mediatek, firmware-misc-nonfree, firmware-atheros, firmware-brcm80211, wpasupplicant, wireless-regdb, iw, rfkill, elogind, libpam-elogind
+Depends: herbstluftwm, xinit, alacritty, polybar, rofi, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, firmware-iwlwifi, firmware-realtek, firmware-mediatek, firmware-misc-nonfree, firmware-atheros, firmware-brcm80211, wpasupplicant, wireless-regdb, iw, rfkill, elogind, libpam-elogind, rsyslog
 Recommends: xlibre, xlibre-archive-keyring
 Homepage: https://github.com/kmccuddy/sartoria
 Description: Sartoria desktop metapackage

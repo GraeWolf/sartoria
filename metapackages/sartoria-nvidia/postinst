@@ -9,12 +9,32 @@ if [ "$1" = configure ]; then
       update-glx --set glx /usr/lib/mesa-diverted >/dev/null 2>&1 || true
     fi
   fi
+  mkdir -p /var/lib/nvidia
+  chmod 0755 /var/lib/nvidia
+  # 0.0.3–0.0.5 shipped this; kmod then FATALS "Module nvidia not found".
+  rm -f /etc/modules-load.d/sartoria-nvidia.conf
+  # Persistence mode keeps the dGPU out of runtime D3. The vendor sysv script
+  # is S01 (before nvidia.ko) and startpar prints "nvidia-persistenced ...
+  # failed!" on tty1. Disable it.
+  if command -v update-rc.d >/dev/null 2>&1 && [ -x /etc/init.d/nvidia-persistenced ]; then
+    update-rc.d nvidia-persistenced disable >/dev/null 2>&1 || true
+  fi
   if command -v update-initramfs >/dev/null 2>&1; then
     update-initramfs -u >/dev/null 2>&1 || true
+  fi
+  if command -v update-grub >/dev/null 2>&1; then
+    update-grub >/dev/null 2>&1 || true
   fi
   if [ -f /var/lib/sartoria/policy-rc.d-owned ]; then
     rm -f /usr/sbin/policy-rc.d /var/lib/sartoria/policy-rc.d-owned
   fi
-  echo "sartoria-nvidia: reboot, then startx. Session GL is Mesa; offload with: sartoria nvidia glxinfo -B" >&2
+  # 0.0.6 re-enumerated the USB keyboard on every resume and zeroed the LED.
+  led=/sys/class/leds/asus::kbd_backlight/brightness
+  if [ -w "$led" ]; then
+    if [ -z "${2:-}" ] || dpkg --compare-versions "$2" lt-nl 0.0.7; then
+      echo 3 > "$led" 2>/dev/null || true
+    fi
+  fi
+  echo "sartoria-nvidia: reboot required (S0ix on, PVMA off). Then startx. Offload: sartoria nvidia glxinfo -B" >&2
 fi
 exit 0

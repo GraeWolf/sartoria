@@ -1,0 +1,16 @@
+Explanation: Sartoria F2 — Brave Origin only. Do not install the AI-capable browser.
+Package: brave-origin
+Pin: release o=Brave Software
+Pin-Priority: 990
+
+Package: brave-keyring
+Pin: release o=Brave Software
+Pin-Priority: 990
+
+Package: brave-browser
+Pin: release o=Brave Software
+Pin-Priority: -1
+
+Package: *
+Pin: release o=Brave Software
+Pin-Priority: 100

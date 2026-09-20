@@ -46,6 +46,9 @@ bind Shift-r reload
 bind q close
 bind Return spawn "$TERMINAL"
 bind space spawn rofi -show drun
+if command -v sartoria-browser >/dev/null 2>&1; then
+  bind b spawn sartoria-browser
+fi
 
 bind h focus left
 bind j focus down
@@ -84,6 +87,7 @@ hc rule windowtype~'_NET_WM_WINDOW_TYPE_(DIALOG|UTILITY|SPLASH)' floating=on
 hc rule windowtype='_NET_WM_WINDOW_TYPE_DIALOG' focus=on
 hc rule windowtype~'_NET_WM_WINDOW_TYPE_(NOTIFICATION|DOCK|DESKTOP)' manage=off
 hc rule class=Alacritty focus=on
+hc rule class~'^[Bb]rave-origin$' focus=on
 hc rule class=Rofi manage=off
 hc rule class=dunst manage=off
 
