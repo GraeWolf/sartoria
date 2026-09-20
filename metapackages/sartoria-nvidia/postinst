@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+  # Hybrid: Mesa is the session GLX. NVIDIA GL is opt-in via `sartoria nvidia`.
+  # glx-alternative-nvidia otherwise becomes the default and XLibre Prime
+  # paints black windows.
+  if command -v update-glx >/dev/null 2>&1; then
+    if [ -d /usr/lib/mesa-diverted ]; then
+      update-glx --set glx /usr/lib/mesa-diverted >/dev/null 2>&1 || true
+    fi
+  fi
+  if command -v update-initramfs >/dev/null 2>&1; then
+    update-initramfs -u >/dev/null 2>&1 || true
+  fi
+  if [ -f /var/lib/sartoria/policy-rc.d-owned ]; then
+    rm -f /usr/sbin/policy-rc.d /var/lib/sartoria/policy-rc.d-owned
+  fi
+  echo "sartoria-nvidia: reboot, then startx. Session GL is Mesa; offload with: sartoria nvidia glxinfo -B" >&2
+fi
+exit 0

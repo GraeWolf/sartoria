@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# v0.1 CLI: status, help, version. No update wrapper, no AI.
+# Sartoria CLI. Phase E: status, help, version, gpu, nvidia.
 set -euo pipefail
-VERSION="0.0.1"
+VERSION="0.0.2"
 
 cmd_help() {
   cat <<'EOF'
@@ -9,6 +9,8 @@ sartoria — Sartoria system helper
 
 Usage:
   sartoria status
+  sartoria gpu
+  sartoria nvidia [--] command [args...]
   sartoria version
   sartoria help
 EOF
@@ -22,8 +24,22 @@ running() {
   pgrep -u "$(id -u)" -x "$1" >/dev/null 2>&1
 }
 
+module_loaded() {
+  awk -v m="$1" '$1 == m { found=1 } END { exit found ? 0 : 1 }' /proc/modules 2>/dev/null
+}
+
+xorg_version_line() {
+  local out
+  out="$(Xorg -version 2>&1 || true)"
+  printf '%s\n' "$out" | grep -E 'XLibre|X[.]Org X Server' | head -n1
+}
+
+gl_renderer() {
+  DISPLAY="${DISPLAY:-:0}" glxinfo -B 2>/dev/null | awk -F': ' '/OpenGL renderer/ {print $2; exit}'
+}
+
 cmd_status() {
-  local comm init disp session nvidia extras
+  local comm init disp session nvidia extras xver renderer
   comm="$(cat /proc/1/comm 2>/dev/null || echo unknown)"
   init="$(readlink -f /sbin/init 2>/dev/null || echo unknown)"
   disp="none"
@@ -31,7 +47,8 @@ cmd_status() {
     disp="$(DISPLAY="${DISPLAY:-:0}" xdpyinfo 2>/dev/null | awk -F': ' '/^vendor string/ {print $2; exit}')"
   fi
   if command -v Xorg >/dev/null 2>&1; then
-    disp="${disp} / $(Xorg -version 2>&1 | awk 'NR==1 {print; exit}')"
+    xver="$(xorg_version_line || true)"
+    [ -n "$xver" ] && disp="${disp} / ${xver}"
   fi
   session="${XDG_SESSION_DESKTOP:-${DESKTOP_SESSION:-none}}"
   if command -v herbstclient >/dev/null 2>&1 && herbstclient version >/dev/null 2>&1; then
@@ -40,8 +57,10 @@ cmd_status() {
   nvidia="skipped (no NVIDIA device or not probed)"
   if [ -e /proc/driver/nvidia/version ]; then
     nvidia="$(head -n1 /proc/driver/nvidia/version)"
-  elif lsmod 2>/dev/null | grep -q '^nvidia'; then
+  elif module_loaded nvidia; then
     nvidia="nvidia module loaded"
+  elif lspci 2>/dev/null | grep -qi nvidia; then
+    nvidia="GPU present, proprietary driver not loaded (install sartoria-nvidia)"
   fi
   extras=""
   for p in polybar picom dunst pipewire; do
@@ -51,6 +70,7 @@ cmd_status() {
       extras="${extras} ${p}=down"
     fi
   done
+  renderer="$(gl_renderer || true)"
   cat <<EOF
 sartoria $VERSION
 init:     $comm ($init)
@@ -58,11 +78,77 @@ display:  $disp
 session:  $session
 helpers: ${extras# }
 nvidia:   $nvidia
+gl:       ${renderer:-unknown}
 EOF
+}
+
+cmd_gpu() {
+  echo "== PCI =="
+  lspci 2>/dev/null | grep -iE 'VGA|3D|Display' || echo "(lspci not available)"
+  echo
+  echo "== modules =="
+  for m in amdgpu i915 nvidia nvidia_drm nvidia_modeset nvidia_uvm nouveau; do
+    if module_loaded "$m"; then
+      echo "$m: loaded"
+    else
+      echo "$m: -"
+    fi
+  done
+  echo
+  echo "== nvidia-smi =="
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    nvidia-smi -L 2>/dev/null || nvidia-smi 2>&1 | head -n 20
+  else
+    echo "nvidia-smi not installed"
+  fi
+  echo
+  echo "== xrandr providers =="
+  if [ -n "${DISPLAY:-}" ] && command -v xrandr >/dev/null 2>&1; then
+    xrandr --listproviders 2>/dev/null || echo "(xrandr failed)"
+  else
+    echo "(no DISPLAY; startx first)"
+  fi
+  echo
+  echo "== default GL =="
+  if command -v glxinfo >/dev/null 2>&1 && [ -n "${DISPLAY:-}" ]; then
+    gl_renderer || echo "(glxinfo failed)"
+    DISPLAY="${DISPLAY:-:0}" glxinfo -B 2>/dev/null | awk -F': ' '/OpenGL vendor|OpenGL renderer|OpenGL version/ {print}'
+  else
+    echo "install mesa-utils (sartoria-nvidia) and run this from the X session"
+  fi
+}
+
+cmd_nvidia() {
+  if [ "$#" -eq 0 ]; then
+    echo "usage: sartoria nvidia <command> [args...]" >&2
+    echo "example: sartoria nvidia glxinfo -B" >&2
+    exit 2
+  fi
+  if [ "$1" = "--" ]; then
+    shift
+  fi
+  if [ "$#" -eq 0 ]; then
+    echo "usage: sartoria nvidia <command> [args...]" >&2
+    exit 2
+  fi
+  if ! module_loaded nvidia; then
+    echo "sartoria: nvidia kernel module is not loaded. Install sartoria-nvidia and reboot." >&2
+    exit 1
+  fi
+  if [ -x /usr/bin/sartoria-nvidia-run ]; then
+    exec /usr/bin/sartoria-nvidia-run "$@"
+  fi
+  echo "sartoria: sartoria-nvidia-run missing; install sartoria-nvidia." >&2
+  exit 1
 }
 
 case "${1:-help}" in
   status) cmd_status ;;
+  gpu) cmd_gpu ;;
+  nvidia)
+    shift
+    cmd_nvidia "$@"
+    ;;
   version|--version|-V) cmd_version ;;
   help|--help|-h|"") cmd_help ;;
   *)

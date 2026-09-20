@@ -40,14 +40,14 @@ The name is Italian for tailoring: one cut, not a kit.
 | Session start | Console login on tty1, then **manual `startx`**. Auto-startx is off so a failed X (hybrid GPU) does not log you out. No display manager |
 | Desktop stack | alacritty, polybar, rofi, dunst, picom |
 | v0.1 apps | Session minimum only (no browser, office, or file manager) |
-| Packaging | apt/dpkg, `sartoria-desktop` metapackage |
+| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) |
 | Package freshness | Excalibur + `excalibur-backports` + pinned extra repos |
-| NVIDIA | Hardware milestone. v0.1 installer detects NVIDIA and skips in a VM; proprietary path is stubbed |
+| NVIDIA | Phase E. Hybrid laptop first (Prime offload). Desktop dGPU later. Not on the v0.1 ISO. |
 | Browser (later) | Brave Origin (AI stays out of the browser) |
 | Office (later) | LibreOffice |
 | AI | None in v0.1. OS must work with zero AI config. Optional slot later |
 | Audience | Personal first; public repo is fine; no community SLA |
-| Daily-driver target | VM for a long time; hardware/NVIDIA later |
+| Daily-driver target | This G15 (hybrid AMD+NVIDIA). VM remains the ISO gate. |
 | v0.1 done | ISO installs into a VM and boots the session |
 | Build isolation | ISO is built inside a Devuan VM/chroot, not on the host |
 | Arch/boot (v0.1) | amd64, UEFI, GRUB; BIOS if live-build gives it cheaply |
@@ -55,7 +55,7 @@ The name is Italian for tailoring: one cut, not a kit.
 | Network/audio | NetworkManager + PipeWire; PulseAudio only if PipeWire has no usable sysvinit scripts |
 | Shell/editor/font | bash, neovim, JetBrainsMono Nerd Font |
 | Theme | One dark, dense, cool-neutral theme (Tokyo Night-class) |
-| CLI (v0.1) | `sartoria status`, `sartoria help`, `sartoria version` |
+| CLI | `sartoria status`, `help`, `version`; Phase E adds `gpu` and `nvidia` |
 | Installer prompts | Username, password, hostname (default `sartoria`), keyboard, **disk to wipe** (menu; other disks untouched), explicit YES confirm. Locale `en_US.UTF-8`. Timezone UTC |
 | FDE | Skip on v0.1 VM; later for a laptop profile |
 | Gaming | Capable later (`sartoria-games`), after NVIDIA works. Not in the base ISO |
@@ -139,9 +139,23 @@ Default bindings (v1):
 
 Floating rules for LibreOffice/Steam dialogs come when those apps land.
 
-### NVIDIA (not a v0.1 gate)
+### NVIDIA (Phase E; not a v0.1 ISO gate)
 
-The installer looks for NVIDIA hardware. In a VM it logs “none found” and continues with modesetting/virtio. Proprietary install code may exist as a stub; it is not the v0.1 exit test. Do not load `nvidia.ko` on virtio.
+The installer looks for NVIDIA hardware. In a VM it logs “none found” / “stubbed” and continues with modesetting/virtio. Do not load `nvidia.ko` on virtio. Do not put `nvidia-driver` on the installer ISO.
+
+**Phase E profile is hybrid laptop, not desktop dGPU.** First machine: ASUS ROG Zephyrus G15 GA503RM (AMD Rembrandt 680M + RTX 3060 Mobile). The internal panel is wired to the iGPU.
+
+Locked hybrid behaviour:
+
+- **On-demand Prime render offload.** The session stays on the iGPU. NVIDIA is an offload source for opted-in clients.
+- X: `modesetting` + `PrimaryGPU yes` on amdgpu/i915 (`10-igpu.conf`). NVIDIA DDX matches `nvidia-drm` with `AllowEmptyInitialConfiguration` and `PrimaryGPU no`. `AllowNVIDIAGPUScreens` on.
+- Kernel: proprietary `nvidia-kernel-dkms` 550 from Excalibur (not the open flavor: 550-open fails to build on 6.12.107). `nvidia-drm.modeset=1`. `nouveau` stays blacklisted. Do not set `NVreg_PreserveVideoMemoryAllocations` (breaks Optimus).
+- GLX: Mesa remains the session default so herbstluftwm/alacritty/picom do not go through NVIDIA GL (XLibre + Prime black windows). NVIDIA GLX only via `sartoria nvidia <cmd>` (`__NV_PRIME_RENDER_OFFLOAD=1`, `__GLX_VENDOR_LIBRARY_NAME=nvidia`).
+- picom stays on the `xrender` backend.
+- Do not run `nvidia-xconfig`, do not install Bumblebee, do not make NVIDIA the primary GPU. A MUX / dGPU-drives-panel mode is a later option, not the E exit.
+- Package: `sartoria-nvidia`, installed on the target after the ISO. DKMS needs `linux-headers-amd64` matching the running 6.12 image; do not pull linux 7 headers from backports just to build the module.
+
+Desktop dGPU (NVIDIA as the only / primary GPU) is a later Phase E follow-up, not this gate.
 
 ---
 
@@ -191,9 +205,15 @@ Installer-first offline ISO. TUI: user, password, hostname, keyboard, whole-disk
 
 ### Phase E — Hardware (NVIDIA gate)
 
-Real NVIDIA machine. `sartoria-nvidia`. Desktop dGPU first; laptop Prime is later.
+Real NVIDIA machine. `sartoria-nvidia`. **Hybrid laptop first** (this G15); desktop dGPU later.
 
-**Exit E:** XLibre + herbstluftwm + NVIDIA accel, no black windows.
+**E1.** Kernel module: `nvidia.ko` loaded, `nvidia-smi` lists the RTX 3060, `nouveau` not bound, PID 1 still sysvinit.
+
+**E2.** Session: `startx` → XLibre + herbstluftwm on the AMD iGPU. Default `glxinfo` is Mesa/AMD, not llvmpipe, not NVIDIA. No black windows.
+
+**E3.** Offload: `xrandr --listproviders` shows modesetting + NVIDIA. `sartoria nvidia glxinfo` reports the NVIDIA renderer. An offloaded GL client is not a black window.
+
+**Exit E:** E1–E3 on this laptop. Done 2026-09-20; see `lab/PHASE-E.md`. Desktop dGPU is a later follow-up, not this gate.
 
 ### Phase F — Daily-driver extras
 
@@ -267,6 +287,12 @@ sartoria/
 
 NVIDIA checks are hardware-only. Do not fake them in QEMU.
 
+On the G15 (Phase E), also:
+
+1. `nvidia-smi` lists the dGPU.
+2. Default GL renderer is the iGPU (Mesa). `sartoria nvidia glxinfo` is NVIDIA.
+3. herbstluftwm session has no black windows.
+
 There is no pytest suite for v1. The test is **boot + session + metapackage reproduce**.
 
 ---
@@ -274,7 +300,7 @@ There is no pytest suite for v1. The test is **boot + session + metapackage repr
 ## 10. Risks
 
 1. **XLibre is third-party.** ABI/driver mismatch is the usual breakage. Pin versions.
-2. **NVIDIA + XLibre** is the hardest integration; it is not a VM milestone.
+2. **NVIDIA + XLibre** is the hardest integration; it is not a VM milestone. Hybrid Prime on XLibre has a known black-window failure if NVIDIA becomes the session GLX provider — keep Mesa as default.
 3. **Installer-first ISO** must be tested as an installer, not as a live desktop.
 4. **auto-startx on tty1** must not run on SSH or extra VTs.
 5. **live-build on the host will fight you.** Build ISOs in a Devuan VM/chroot.

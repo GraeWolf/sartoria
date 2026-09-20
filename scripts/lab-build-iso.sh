@@ -4,7 +4,7 @@ set -euo pipefail
 export LAB_NAME="${LAB_NAME:-sartoria-c}"
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-DEB="${DEB:-$CACHE/sartoria-desktop_0.0.1_all.deb}"
+DEB="${DEB:-$CACHE/sartoria-desktop_0.0.2_all.deb}"
 VARIANT="${BUILD_VARIANT:-test}"
 REMOTE_WORK="/home/sartoria/sartoria-src"
 

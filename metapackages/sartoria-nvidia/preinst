@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+# nvidia-persistenced's postinst runs `invoke-rc.d start`. That fails on
+# sysvinit until nvidia.ko is loaded, leaving dpkg half-configured.
+# Deny service starts for this dpkg run if no policy-rc.d exists yet.
+mkdir -p /var/lib/sartoria
+if [ ! -e /usr/sbin/policy-rc.d ]; then
+  printf '%s\n' '#!/bin/sh' 'exit 101' > /usr/sbin/policy-rc.d
+  chmod 755 /usr/sbin/policy-rc.d
+  : > /var/lib/sartoria/policy-rc.d-owned
+fi
+exit 0

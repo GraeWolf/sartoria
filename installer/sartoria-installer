@@ -222,7 +222,7 @@ pick_disk() {
 
 nvidia_note() {
   if lspci 2>/dev/null | grep -qi nvidia; then
-    log "NVIDIA GPU detected; proprietary driver path is stubbed in v0.1; continuing with modesetting"
+    log "NVIDIA GPU detected; ISO keeps iGPU/modesetting. After reboot install sartoria-nvidia (Prime offload)."
   else
     log "No NVIDIA GPU (skip proprietary path)"
   fi

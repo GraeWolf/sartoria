@@ -1,0 +1,26 @@
+#!/bin/sh
+# Run a client on the NVIDIA dGPU via Prime render offload.
+# Session GLX stays Mesa; only this process uses NVIDIA GL.
+if [ "$#" -eq 0 ]; then
+  echo "usage: sartoria nvidia <command> [args...]" >&2
+  exit 2
+fi
+if [ "$1" = "--" ]; then
+  shift
+fi
+if [ "$#" -eq 0 ]; then
+  echo "usage: sartoria nvidia <command> [args...]" >&2
+  exit 2
+fi
+
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+# Provider name varies (NVIDIA-G0 / NVIDIA-0); the driver picks one if unset.
+if [ -z "${__NV_PRIME_RENDER_OFFLOAD_PROVIDER:-}" ] && [ -n "${DISPLAY:-}" ]; then
+  prov="$(xrandr --listproviders 2>/dev/null | awk -F: '/NVIDIA/ {gsub(/^ +/,"",$NF); print $NF; exit}')"
+  [ -n "$prov" ] && export __NV_PRIME_RENDER_OFFLOAD_PROVIDER="$prov"
+fi
+if [ -f /usr/share/vulkan/icd.d/nvidia_icd.json ]; then
+  export __VK_ICD_FILENAMES="${__VK_ICD_FILENAMES:-/usr/share/vulkan/icd.d/nvidia_icd.json}"
+fi
+exec "$@"

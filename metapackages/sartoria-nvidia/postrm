@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+if [ -f /var/lib/sartoria/policy-rc.d-owned ]; then
+  rm -f /usr/sbin/policy-rc.d /var/lib/sartoria/policy-rc.d-owned
+fi
+exit 0

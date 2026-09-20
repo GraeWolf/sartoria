@@ -37,7 +37,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 2. Log in on tty1 with the user created at install time.
 3. You get a shell. Run `startx` for herbstluftwm. If X fails you stay logged in; check `~/.local/share/xorg/Xorg.0.log` or `/var/log/Xorg.0.log`.
 
-Hybrid AMD/NVIDIA (or Intel/NVIDIA): the panel is on the iGPU. Firmware for amdgpu and common Wi‑Fi chips ships on the ISO. `nouveau` is blacklisted until `sartoria-nvidia`. `/tmp/.X11-unix` must be mode `1777` (x11-common).
+Hybrid AMD/NVIDIA (or Intel/NVIDIA): the panel is on the iGPU. Firmware for amdgpu and common Wi‑Fi chips ships on the ISO. `nouveau` is blacklisted. Proprietary NVIDIA is **not** on the ISO; after install run `sudo apt-get install sartoria-nvidia` and reboot. `/tmp/.X11-unix` must be mode `1777` (x11-common).
 
 Wi‑Fi: `sudo nmtui` (needs `wpasupplicant`). If the radio is blocked: `sudo rfkill unblock wifi`. Then `ip link` should show a `wlan` or `wlp` interface.
 4. Super+Return (or **Alt+Return** if Super is eaten by the host) opens a terminal. Super+Space / Alt+Space opens the launcher.
@@ -64,6 +64,31 @@ sudo apt-get dist-upgrade
 ```
 
 Stay on `excalibur` + backports + the pinned extra repos. Do not add Freia or Ceres for fun.
+
+## NVIDIA (hybrid laptop)
+
+The session stays on the iGPU. NVIDIA is opt-in per command (Prime render offload).
+
+```bash
+sudo apt-get install sartoria-nvidia   # DKMS build; then reboot
+sartoria gpu                           # providers, nvidia-smi, default GL
+sartoria nvidia glxinfo -B             # must say NVIDIA, not Mesa/llvmpipe
+sartoria nvidia glxgears
+```
+
+Do not run `nvidia-xconfig`. Do not install Bumblebee. If every window goes black after the driver install, GLX was switched to NVIDIA; `sudo update-glx --set glx /usr/lib/mesa-diverted` and restart the session.
+
+If `apt` reports `dpkg returned an error code (1)` and `nvidia-persistenced` is half-configured: that daemon’s postinst starts before `nvidia.ko` exists. Finish configure without starting it, then reboot:
+
+```bash
+sudo sh -c 'printf "%s\n" "#!/bin/sh" "exit 101" > /usr/sbin/policy-rc.d
+chmod 755 /usr/sbin/policy-rc.d
+dpkg --configure nvidia-persistenced
+dpkg --configure -a
+rm -f /usr/sbin/policy-rc.d'
+```
+
+Default `glxinfo` must remain the iGPU (Mesa). picom uses xrender so the compositor does not need NVIDIA GL.
 
 ## Rescue (development only)
 

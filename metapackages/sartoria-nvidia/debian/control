@@ -1,0 +1,27 @@
+Source: sartoria-nvidia
+Section: metapackages
+Priority: optional
+Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/kmccuddy/sartoria
+
+Package: sartoria-nvidia
+Architecture: all
+Depends: sartoria-desktop (>= 0.0.2),
+         nvidia-driver,
+         nvidia-kernel-dkms,
+         linux-headers-amd64,
+         firmware-nvidia-gsp,
+         nvidia-smi,
+         nvidia-modprobe,
+         mesa-utils,
+         pciutils,
+         ${misc:Depends}
+Conflicts: bumblebee, bumblebee-nvidia
+Recommends: nvidia-vulkan-icd
+Description: Sartoria hybrid NVIDIA (Prime offload)
+ Proprietary NVIDIA kernel module and Prime render offload for
+ Sartoria on hybrid AMD/Intel + NVIDIA laptops. The session stays
+ on the iGPU (Mesa). Use `sartoria nvidia <cmd>` to offload.
+ Not for virtio/QEMU. Not Bumblebee. Not nvidia-xconfig --prime.

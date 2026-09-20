@@ -12,4 +12,4 @@ Lab A3 is `./scripts/lab-verify.sh`. Phase D exit is `./scripts/test-iso.sh`. Th
 8. `sartoria status` prints init, display, session, NVIDIA skipped.
 9. `apt-get update` works with signed sources.
 
-NVIDIA checks are hardware-only.
+NVIDIA checks are hardware-only (`lab/PHASE-E.md`). Do not install `sartoria-nvidia` in QEMU.

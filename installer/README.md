@@ -11,7 +11,7 @@ v0.1 prompts:
 5. Explicit whole-disk wipe confirm (type YES)
 6. Install
 
-Offline ISO. Whole disk, ext4, no LUKS. NVIDIA detect → skip in a VM.
+Offline ISO. Whole disk, ext4, no LUKS. NVIDIA detect → skip proprietary install on the live ISO (iGPU/modesetting). After reboot, hybrid laptops install `sartoria-nvidia`.
 
 Unattended lab: boot the GRUB entry “Install Sartoria (unattended lab)” or pass `sartoria.auto=1`. Defaults: keymap `us`, hostname `sartoria`, user `sartoria` / password `sartoria`, wipe the first non-live disk.
 

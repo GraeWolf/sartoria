@@ -4,7 +4,7 @@ A personal opinionated Linux distribution. Devuan remix, own ISO, keyboard-first
 
 Sartoria is omakase: finished defaults, no account to install or boot. It is not Arch, not systemd, not Hyprland, not Wayland, and not a post-install gist.
 
-**Status:** Phase D complete — v0.1 ISO. Installer-first Devuan remix, TUI installer, herbstluftwm on XLibre.
+**Status:** Phase E complete on this G15 (hybrid Prime offload). v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
 
 Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.md`](MANUAL.md).
 
@@ -17,7 +17,7 @@ Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.
 | Display | XLibre (not Xorg, not Wayland) |
 | WM | herbstluftwm |
 | Installer | text TUI, installer-first ISO |
-| Packaging | apt/dpkg, `sartoria-desktop` |
+| Packaging | apt/dpkg, `sartoria-desktop`, `sartoria-nvidia` |
 | v0.1 gate | ISO installs into a VM and boots the session |
 
 ## What it is not
@@ -43,9 +43,7 @@ LAB_NAME=sartoria-c ./scripts/lab-install.sh
 LAB_NAME=sartoria-c ./scripts/lab-phase-c.sh
 BUILD_VARIANT=test ./scripts/lab-build-iso.sh
 ./scripts/test-iso.sh
-
-
-
+./scripts/build-sartoria-nvidia.sh
 ```
 
 See [`lab/README.md`](lab/README.md) for credentials and firmware notes.
