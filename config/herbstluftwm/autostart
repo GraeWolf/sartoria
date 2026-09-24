@@ -49,6 +49,9 @@ bind space spawn rofi -show drun
 if command -v sartoria-browser >/dev/null 2>&1; then
   bind b spawn sartoria-browser
 fi
+if command -v sartoria-files >/dev/null 2>&1; then
+  bind e spawn sartoria-files
+fi
 
 bind h focus left
 bind j focus down
@@ -93,6 +96,12 @@ hc keybind XF86AudioMicMute spawn wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
 # Hardware brightness keys. 5% of the panel; sartoria-brightness keeps it on.
 hc keybind XF86MonBrightnessUp spawn sartoria-brightness up
 hc keybind XF86MonBrightnessDown spawn sartoria-brightness down
+
+# Print grabs a region. Shift+Print grabs the whole screen. Not on Alt.
+if command -v sartoria-shot >/dev/null 2>&1; then
+  hc keybind Print spawn sartoria-shot region
+  hc keybind Shift-Print spawn sartoria-shot full
+fi
 
 hc rule focus=on
 hc rule windowtype~'_NET_WM_WINDOW_TYPE_(DIALOG|UTILITY|SPLASH)' floating=on

@@ -19,7 +19,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 - Devuan 6 Excalibur is the parent. Sysvinit is PID 1 because that is Devuan’s default.
 - Display is XLibre. There is no Wayland session.
 - Window manager is herbstluftwm (manual tiling). You split frames; the OS does not pretend to be Hyprland.
-- One theme. One terminal (alacritty). One launcher (rofi). One bar (polybar).
+- One theme. One terminal (alacritty). One launcher (rofi). One bar (polybar). One file manager (Nautilus). The session is X11.
 - Terminal font is JetBrainsMono Nerd Font Mono. If letters run together or show random gaps, Alacritty is not using that family (`fc-match "JetBrainsMono Nerd Font Mono"` must not be DejaVu Sans).
 - AI is not part of the OS in v0.1. The machine must work with zero API keys.
 
@@ -122,6 +122,24 @@ sudo apt-get install ./lab/cache/sartoria-desktop_0.0.6_all.deb ./lab/cache/sart
 
 Launch from rofi (Super+Space). Writer/Calc/Impress tile. File and options dialogs should float; Super+s toggles floating if one does not. Reload herbstluftwm (Super+Shift+r) after install. Existing `~/.config/herbstluftwm/autostart` is not overwritten.
 
+## Daily bits (file manager, screenshots, DPI)
+
+Not on the installer ISO. Nautilus and screenshots are `sartoria-daily`. DPI is `sartoria-desktop` ≥ 0.0.7. Hyprland, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` are pinned to priority -1.
+
+```bash
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-daily.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.7_all.deb ./lab/cache/sartoria-daily_0.0.1_all.deb
+```
+
+Super+e opens Nautilus. Print selects a region, Shift+Print grabs the whole screen. Both save a PNG under `~/Pictures/Screenshots` and copy it. Reload herbstluftwm (Super+Shift+r) if the binds are missing. Existing autostart is not overwritten.
+
+`Xft.dpi` stays 96 on a normal display, including the VM. A panel at or above 140 DPI (this G15 is about 189) gets 144 on the next `startx`. To force a value, export it in `~/.xinitrc` before `sartoria-session`:
+
+```bash
+export SARTORIA_DPI=96
+```
+
 ## Rescue (development only)
 
 XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is allowed **on the lab machine** while debugging. Sartoria still ships XLibre.
@@ -139,6 +157,9 @@ If Alacritty glyphs collide or have holes between letters, the Nerd Font is miss
 | Super+Return | terminal (alacritty) |
 | Super+Space | launcher (rofi) |
 | Super+b | browser (Brave Origin, after `sartoria-origin`) |
+| Super+e | file manager (Nautilus, after `sartoria-daily`) |
+| Print | screenshot a region |
+| Shift+Print | screenshot the whole screen |
 | Super+q | close window |
 | Super+Shift+e | exit session |
 | Super+1..9 | use tag |

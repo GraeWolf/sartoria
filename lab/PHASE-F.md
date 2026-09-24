@@ -10,9 +10,9 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | --- | --- | --- |
 | F1 | Alacritty / Nerd Font actually installed; monospace, not DejaVu Sans | done (`sartoria-desktop` 0.0.3 on voyager) |
 | F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.9 passed one lid cycle on 2026-09-24 03:40 (keys work, hook re-enumerated `1-3`, backlight restored to 3). AC-plug spam is the Samsung NVMe AER, still open |
-| F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | package in tree; install on voyager needs sudo |
+| F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | installed on voyager (`brave-origin` 1.95.104; `brave-browser` pinned to -1) |
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
-| F4 | Remaining daily bits (file manager, screenshots, laptop DPI) | not started |
+| F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Print is bound to `sartoria-shot` |
 | F5 | Optional `sartoria-games` | not started |
 | F6 | Laptop LUKS profile on a **spare** disk / second install | not started |
 | F7 | Optional `sartoria-ai` (last) | not started |
@@ -205,9 +205,32 @@ sudo apt-get install ./lab/cache/sartoria-desktop_0.0.6_all.deb ./lab/cache/sart
 
 Exit F3: `dpkg -s libreoffice` is `ii`, `dpkg -s libreoffice-gtk3` is `ii`, Writer tiles, File → Open floats (or Super+s if a dialog is missed).
 
+## F4 — File manager, screenshots, laptop DPI
+
+`sartoria-desktop` 0.0.7 adds `sartoria-dpi`. The shipped `Xft.dpi` stays 96, which is right for the VM. On session start the helper measures the primary output. This panel is `eDP-1` 2560×1440 at 344×194 mm, about 189 DPI. Anything at or above 140 DPI gets **144** (1.5×). 192 would turn the tiling workspace into 720p. `SARTORIA_DPI` in `~/.xinitrc`, exported before `sartoria-session`, wins, including `96`. An `Xft.dpi` other than 96 already in the resource database is left alone.
+
+DPI applies on the next `startx`. Reloading herbstluftwm does not re-run it. Open windows keep the DPI they started with.
+
+`sartoria-daily` 0.0.1, not on the v0.1 ISO, no third-party repo:
+
+- **Nautilus** (`sartoria-files`). Super+e and Alt+e. Excalibur 48. It tiles. Dialogs use the existing DIALOG rule. Do not add a `class=Nautilus` floating rule.
+- **Screenshots** (`sartoria-shot`, `maim`, `xclip`). Print selects a region. Shift+Print grabs the whole screen. The cursor is hidden. The PNG goes to `~/Pictures/Screenshots` and the clipboard. `SARTORIA_SCREENSHOT_DIR` overrides the directory.
+- **No Hyprland.** `sartoria-desktop` pins `hyprland`, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` to -1. Apt on this machine was willing to select `hyprpolkitagent` from backports as a polkit agent. This session is X11.
+
+```bash
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-daily.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.7_all.deb ./lab/cache/sartoria-daily_0.0.1_all.deb
+```
+
+`seed-user-config` does not overwrite `~/.config/herbstluftwm/autostart`. Reload (Super+Shift+r) after that file has the new binds. Then restart X and check `xrdb -query | grep dpi` is `144` on this panel, and `sartoria-dpi measure` prints the physical DPI (189 here).
+
+Exit F4: `dpkg -s nautilus` and `dpkg -s maim` are `ii`; `apt-cache policy hyprland` is not installable (pin -1); Super+e opens Nautilus tiled; Print writes a PNG and the clipboard; after a new `startx`, `Xft.dpi` is 144 on this panel and would stay 96 on a VM.
+
+2026-09-24 on voyager: `sartoria-desktop` 0.0.7 and `sartoria-daily` 0.0.1 are installed. `sartoria-files` mapped Nautilus (`org.gnome.Nautilus`) tiled. `xrdb` reports `Xft.dpi: 144`. `hyprland` and `hyprpolkitagent` are pin priority -1. Print and Shift+Print are bound to `sartoria-shot`. `maim` plus `xclip` produced an `image/png` clipboard target.
+
 ## Later
 
-- **F4.** Daily bits only after the terminal, browser, and office do not block work.
 - **F5.** `sartoria-games` after NVIDIA; optional.
 - **F6.** LUKS installer profile. Prove on a spare disk. v0.1 stays whole-disk ext4, no encryption.
 - **F7.** `sartoria-ai` last and optional.

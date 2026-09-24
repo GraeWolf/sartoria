@@ -1,0 +1,32 @@
+#!/bin/sh
+# Save a PNG under Pictures/Screenshots and copy it to the clipboard.
+# region (default) asks for a rectangle. full grabs every output.
+# Usage: sartoria-shot [region|full]
+set -eu
+
+mode=${1:-region}
+case $mode in
+  region|full) ;;
+  *)
+    echo "usage: sartoria-shot region|full" >&2
+    exit 2
+    ;;
+esac
+
+if [ -f "$HOME/.config/user-dirs.dirs" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/.config/user-dirs.dirs"
+fi
+dir=${SARTORIA_SCREENSHOT_DIR:-${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots}
+mkdir -p "$dir"
+file="$dir/screenshot-$(date +%Y-%m-%d_%H-%M-%S).png"
+
+case $mode in
+  region) maim -u -s "$file" ;;
+  full) maim -u "$file" ;;
+esac
+
+xclip -selection clipboard -t image/png -i "$file"
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send "Screenshot" "$file"
+fi

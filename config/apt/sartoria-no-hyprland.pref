@@ -1,0 +1,12 @@
+Explanation: Sartoria is an X11 session. Do not satisfy polkit or a desktop with Hyprland.
+Package: hyprland
+Pin: version *
+Pin-Priority: -1
+
+Package: hyprpolkitagent
+Pin: version *
+Pin-Priority: -1
+
+Package: xdg-desktop-portal-hyprland
+Pin: version *
+Pin-Priority: -1

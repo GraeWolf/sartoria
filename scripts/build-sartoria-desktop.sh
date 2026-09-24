@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.6}"
+VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.7}"
 PKG=sartoria-desktop
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"
@@ -35,6 +35,7 @@ mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/usr/share/fonts/truetype/sartoria" \
   "$STAGE/etc/fonts/conf.d" \
   "$STAGE/etc/apt/sources.list.d" \
+  "$STAGE/etc/apt/preferences.d" \
   "$STAGE/etc/skel/.config" \
   "$STAGE/etc/X11/xorg.conf.d" \
   "$STAGE/etc/modprobe.d" \
@@ -58,6 +59,7 @@ install -m 0755 "$ROOT/config/sartoria-cli/sartoria" "$STAGE/usr/bin/sartoria"
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-session" "$STAGE/usr/bin/sartoria-session"
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-brightness" "$STAGE/usr/bin/sartoria-brightness"
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-keys" "$STAGE/usr/bin/sartoria-keys"
+install -m 0755 "$ROOT/config/sartoria-cli/sartoria-dpi" "$STAGE/usr/bin/sartoria-dpi"
 install -m 0755 "$ROOT/metapackages/sartoria-desktop/seed-user-config" \
   "$STAGE/usr/lib/sartoria/seed-user-config"
 
@@ -69,6 +71,8 @@ install -m 0644 "$ROOT/config/udev/rules.d/80-sartoria-mm-ignore.rules" \
   "$STAGE/etc/udev/rules.d/80-sartoria-mm-ignore.rules"
 install -m 0644 "$ROOT/metapackages/sartoria-desktop/xlibre-debian.sources" \
   "$STAGE/etc/apt/sources.list.d/xlibre-debian.sources"
+install -m 0644 "$ROOT/config/apt/sartoria-no-hyprland.pref" \
+  "$STAGE/etc/apt/preferences.d/sartoria-no-hyprland"
 install -m 0644 "$ROOT/config/fontconfig/50-sartoria-fonts.conf" \
   "$STAGE/etc/fonts/conf.d/50-sartoria-fonts.conf"
 
@@ -127,6 +131,8 @@ Recommends: xlibre, xlibre-archive-keyring
 Homepage: https://github.com/kmccuddy/sartoria
 Description: Sartoria desktop metapackage
  Keyboard-first herbstluftwm session for Sartoria (Devuan remix).
+ On a panel at or above 140 DPI, sartoria-dpi sets Xft.dpi to 144
+ at session start. Displays near 96 DPI, including the VM, stay at 96.
 EOF
 install -m 0755 "$ROOT/metapackages/sartoria-desktop/postinst" "$STAGE/DEBIAN/postinst"
 

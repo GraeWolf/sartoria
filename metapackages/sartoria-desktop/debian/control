@@ -55,3 +55,5 @@ Description: Sartoria desktop metapackage
  Recommends: enable the shipped source, apt-get update, then install
  xlibre. Xorg is a development rescue, not the product session.
  Hybrid NVIDIA is a separate package (sartoria-nvidia).
+ On a panel at or above 140 DPI, sartoria-dpi sets Xft.dpi to 144
+ at session start. Displays near 96 DPI, including the VM, stay at 96.

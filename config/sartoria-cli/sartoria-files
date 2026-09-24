@@ -1,0 +1,3 @@
+#!/bin/sh
+# Sartoria file manager. Nautilus from Excalibur.
+exec nautilus "$@"

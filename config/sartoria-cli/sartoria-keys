@@ -10,6 +10,9 @@ describe_binds() {
       if (cmd == "spawn alacritty") return "Terminal"
       if (cmd ~ /^spawn rofi /) return "Application launcher"
       if (cmd ~ /(^| )sartoria-browser$/) return "Browser"
+      if (cmd ~ /(^| )sartoria-files$/) return "File manager"
+      if (cmd ~ /sartoria-shot region$/) return "Screenshot a region"
+      if (cmd ~ /sartoria-shot full$/) return "Screenshot the screen"
       if (cmd == "close") return "Close window"
       if (cmd == "reload") return "Reload window manager"
       if (cmd == "quit") return "Exit session"
@@ -54,6 +57,9 @@ describe_binds() {
       if (cmd == "spawn alacritty") return 20
       if (cmd ~ /^spawn rofi /) return 21
       if (cmd ~ /sartoria-browser/) return 22
+      if (cmd ~ /sartoria-files/) return 23
+      if (cmd ~ /sartoria-shot region$/) return 76
+      if (cmd ~ /sartoria-shot full$/) return 77
       if (cmd == "close") return 30
       if (cmd == "reload") return 31
       if (cmd == "quit") return 32
@@ -86,6 +92,7 @@ describe_binds() {
       if (token == "XF86AudioMicMute") return "Microphone mute"
       if (token == "XF86MonBrightnessUp") return "Brightness up"
       if (token == "XF86MonBrightnessDown") return "Brightness down"
+      if (token == "Print") return "Print"
       if (length(token) == 1) return toupper(token)
       return token
     }

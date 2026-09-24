@@ -1,0 +1,71 @@
+#!/bin/sh
+# Set Xft.dpi from the primary output. 96 is correct for a VM and for a
+# ~96 DPI display. This G15's panel is 2560x1440 at ~189 DPI, so 96 draws
+# everything small. A panel at or above 140 DPI gets 144 (1.5x). 192 would
+# turn the tiling workspace into 720p.
+# SARTORIA_DPI forces a value, including 96. Any other Xft.dpi already in
+# the resource database is left alone.
+# Usage: sartoria-dpi [measure]
+set -eu
+
+if [ -z "${DISPLAY:-}" ]; then
+  [ "${1:-}" = measure ] && exit 1
+  exit 0
+fi
+
+measure() {
+  xrandr --query 2>/dev/null | awk '
+    $2 == "connected" {
+      primary = ($3 == "primary")
+      w = 0
+      mm = 0
+      for (i = 1; i <= NF; i++) {
+        if (w == 0 && $i ~ /^[0-9]+x[0-9]+\+/) {
+          split($i, a, /[x+]/)
+          w = a[1] + 0
+        }
+        if (mm == 0 && $i ~ /^[0-9]+mm$/) {
+          mm = $i
+          sub(/mm$/, "", mm)
+          mm = mm + 0
+        }
+      }
+      if (w > 0 && mm > 0) {
+        dpi = w / (mm / 25.4)
+        if (best == "" || primary) best = dpi
+        if (primary) exit
+      }
+    }
+    END { if (best != "") printf "%.0f\n", best + 0 }
+  '
+}
+
+if [ "${1:-}" = measure ]; then
+  measure
+  exit 0
+fi
+
+if [ -n "${SARTORIA_DPI:-}" ]; then
+  printf 'Xft.dpi: %s\n' "$SARTORIA_DPI" | xrdb -merge
+  exit 0
+fi
+
+current=$(xrdb -query 2>/dev/null | awk -F: '
+  tolower($1) ~ /^[ \t]*xft\.dpi$/ {
+    gsub(/^[ \t]+|[ \t]+$/, "", $2)
+    print $2
+    exit
+  }
+')
+case ${current:-96} in
+  96) ;;
+  *) exit 0 ;;
+esac
+
+phys=$(measure || true)
+case $phys in
+  ''|*[!0-9]*) exit 0 ;;
+esac
+if [ "$phys" -ge 140 ]; then
+  printf 'Xft.dpi: 144\n' | xrdb -merge
+fi

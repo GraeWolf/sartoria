@@ -1,0 +1,21 @@
+Source: sartoria-daily
+Section: metapackages
+Priority: optional
+Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/kmccuddy/sartoria
+
+Package: sartoria-daily
+Architecture: all
+Depends: sartoria-desktop (>= 0.0.7),
+         nautilus,
+         gvfs,
+         udisks2,
+         maim,
+         xclip,
+         ${misc:Depends}
+Description: Sartoria daily-driver tools (Phase F4)
+ Nautilus and screenshots from Excalibur. X11 session.
+ Not on the v0.1 ISO. No third-party repo.
+ Laptop DPI is sartoria-desktop (sartoria-dpi), not this package.

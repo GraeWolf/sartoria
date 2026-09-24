@@ -1,3 +1,7 @@
+! 96 is the default (a VM, or a display near 96 DPI). sartoria-dpi raises a
+! panel at or above 140 DPI to 144 when the session starts. Export
+! SARTORIA_DPI in ~/.xinitrc (before sartoria-session) to force a value,
+! including 96.
 Xft.dpi: 96
 Xft.antialias: true
 Xft.hinting: true

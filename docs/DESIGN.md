@@ -40,11 +40,12 @@ The name is Italian for tailoring: one cut, not a kit.
 | Session start | Console login on tty1, then **manual `startx`**. Auto-startx is off so a failed X (hybrid GPU) does not log you out. No display manager |
 | Desktop stack | alacritty, polybar, rofi, dunst, picom |
 | v0.1 apps | Session minimum only (no browser, office, or file manager) |
-| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) + `sartoria-office` (LibreOffice; not on the v0.1 ISO) |
+| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) + `sartoria-office` (LibreOffice; not on the v0.1 ISO) + `sartoria-daily` (file manager and screenshots; not on the v0.1 ISO) |
 | Package freshness | Excalibur + `excalibur-backports` + pinned extra repos |
 | NVIDIA | Phase E. Hybrid laptop first (Prime offload). Desktop dGPU later. Not on the v0.1 ISO. |
 | Browser (later) | Brave Origin via `sartoria-origin` (AI stays out of the browser). Not on the v0.1 ISO. |
 | Office (later) | LibreOffice via `sartoria-office` from Excalibur. Not on the v0.1 ISO. |
+| Daily bits (later) | Nautilus and screenshots via `sartoria-daily` from Excalibur. Not on the v0.1 ISO. X11 session; Hyprland packages are pinned off. |
 | AI | None in v0.1. OS must work with zero AI config. Optional slot later |
 | Audience | Personal first; public repo is fine; no community SLA |
 | Daily-driver target | This G15 (hybrid AMD+NVIDIA). VM remains the ISO gate. |
@@ -226,7 +227,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F3.** LibreOffice from Excalibur. `sartoria-office` depends on `libreoffice` + `libreoffice-gtk3`. Dialogs float via gtk3 VCL and the generic DIALOG rule. No third-party repo. Not a v0.1 ISO gate.
 
-**F4.** Remaining daily bits (file manager, screenshots, laptop DPI if the 96 DPI default is wrong) once F1–F3 do not block work.
+**F4.** Daily bits, once F1–F3 do not block work. Not a v0.1 ISO gate. `sartoria-daily` is Nautilus (`sartoria-files`, Super+e) and `maim` screenshots (`sartoria-shot`, Print and Shift+Print). No third-party repo. The session is X11. `sartoria-desktop` pins `hyprland`, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` to priority -1. Laptop DPI is `sartoria-dpi` in `sartoria-desktop`: a panel at or above 140 DPI gets `Xft.dpi` 144 (this G15 is ~189). 96 stays for a VM. `SARTORIA_DPI` overrides. 192 is not the default; it would make this panel a 720p tiling workspace.
 
 **F5.** Optional `sartoria-games`. After NVIDIA. Not in the base ISO.
 
@@ -279,6 +280,7 @@ sartoria/
     sartoria-nvidia/
     sartoria-origin/
     sartoria-office/
+    sartoria-daily/
     sartoria-ai/
     sartoria-games/
   config/                 # shipped under /usr/share/sartoria
