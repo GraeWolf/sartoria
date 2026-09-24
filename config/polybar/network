@@ -1,0 +1,79 @@
+#!/bin/sh
+# Active link for the bar. Icon alone: md-wifi, md-ethernet, or fa-unlink.
+set -f
+
+muted='%{F#565f89}'
+accent='%{F#7aa2f7}'
+reset='%{F-}'
+icon_wifi='󰖩'
+icon_eth='󰈀'
+icon_down=''
+
+emit() {
+  color=$1
+  icon=$2
+  if [ -n "$color" ]; then
+    printf '%s%s%s\n' "$color" "$icon" "$reset"
+  else
+    printf '%s\n' "$icon"
+  fi
+}
+
+if ! status=$(nmcli -t -f DEVICE,TYPE,STATE dev status 2>/dev/null); then
+  emit "$muted" "$icon_down"
+  exit 0
+fi
+
+eth_up= eth_gw= eth_wait=
+wifi_up= wifi_gw= wifi_wait=
+
+old_ifs=$IFS
+IFS='
+'
+for line in $status; do
+  [ -n "$line" ] || continue
+  dev=${line%%:*}
+  rest=${line#*:}
+  type=${rest%%:*}
+  state=${rest#*:}
+  case $type in
+    ethernet | wifi) ;;
+    *) continue ;;
+  esac
+  case $state in
+    connected*)
+      gw=$(nmcli -g IP4.GATEWAY device show "$dev" 2>/dev/null | head -n 1)
+      if [ "$type" = ethernet ]; then
+        eth_up=1
+        [ -n "$gw" ] && eth_gw=1
+      else
+        wifi_up=1
+        [ -n "$gw" ] && wifi_gw=1
+      fi
+      ;;
+    connecting*)
+      if [ "$type" = ethernet ]; then
+        eth_wait=1
+      else
+        wifi_wait=1
+      fi
+      ;;
+  esac
+done
+IFS=$old_ifs
+
+if [ -n "$eth_gw" ]; then
+  emit '' "$icon_eth"
+elif [ -n "$wifi_gw" ]; then
+  emit '' "$icon_wifi"
+elif [ -n "$eth_up" ]; then
+  emit '' "$icon_eth"
+elif [ -n "$wifi_up" ]; then
+  emit '' "$icon_wifi"
+elif [ -n "$eth_wait" ]; then
+  emit "$accent" "$icon_eth"
+elif [ -n "$wifi_wait" ]; then
+  emit "$accent" "$icon_wifi"
+else
+  emit "$muted" "$icon_down"
+fi

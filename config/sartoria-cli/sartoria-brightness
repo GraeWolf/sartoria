@@ -1,0 +1,57 @@
+#!/bin/sh
+# Step the panel backlight by 5% of its maximum.
+# The sysfs brightness node is root-only; elogind SetBrightness is the
+# session path. Never steps to 0, so the panel cannot be switched off.
+# Usage: sartoria-brightness up|down
+set -eu
+
+dir=${1:-}
+case $dir in
+  up|down) ;;
+  *)
+    echo "usage: sartoria-brightness up|down" >&2
+    exit 2
+    ;;
+esac
+
+dev=
+for cand in /sys/class/backlight/*; do
+  [ -e "$cand/brightness" ] || continue
+  name=${cand##*/}
+  kind=$(cat "$cand/type" 2>/dev/null || echo unknown)
+  if [ -z "$dev" ] || [ "$kind" = raw ]; then
+    dev=$name
+    [ "$kind" = raw ] && break
+  fi
+done
+
+if [ -z "$dev" ]; then
+  echo "sartoria-brightness: no backlight device" >&2
+  exit 1
+fi
+
+base=/sys/class/backlight/$dev
+max=$(cat "$base/max_brightness")
+cur=$(cat "$base/brightness")
+step=$((max * 5 / 100))
+[ "$step" -ge 1 ] || step=1
+
+if [ "$dir" = up ]; then
+  next=$((cur + step))
+  [ "$next" -le "$max" ] || next=$max
+else
+  next=$((cur - step))
+  [ "$next" -ge 1 ] || next=1
+fi
+
+if [ -w "$base/brightness" ]; then
+  printf '%s\n' "$next" >"$base/brightness"
+  exit 0
+fi
+
+# --print-reply is required: without it dbus-send does not issue a method call.
+exec dbus-send --system --print-reply --reply-timeout=2000 \
+  --dest=org.freedesktop.login1 \
+  /org/freedesktop/login1/session/auto \
+  org.freedesktop.login1.Session.SetBrightness \
+  string:backlight "string:$dev" "uint32:$next" >/dev/null

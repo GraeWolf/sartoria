@@ -54,6 +54,8 @@ bind h focus left
 bind j focus down
 bind k focus up
 bind l focus right
+# Super+K opens the cheatsheet, same chord as Omarchy. Alt+K stays focus up.
+hc keybind Mod4-k spawn sartoria-keys
 bind Shift-h shift left
 bind Shift-j shift down
 bind Shift-k shift up
@@ -82,6 +84,16 @@ hc mousebind Mod4-Button1 move
 hc mousebind Mod4-Button3 resize
 hc mousebind Mod4-Button2 zoom
 
+# Hardware volume keys. Unmodified so the laptop multimedia keys work.
+hc keybind XF86AudioRaiseVolume spawn wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+hc keybind XF86AudioLowerVolume spawn wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%-
+hc keybind XF86AudioMute spawn wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+hc keybind XF86AudioMicMute spawn wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+
+# Hardware brightness keys. 5% of the panel; sartoria-brightness keeps it on.
+hc keybind XF86MonBrightnessUp spawn sartoria-brightness up
+hc keybind XF86MonBrightnessDown spawn sartoria-brightness down
+
 hc rule focus=on
 hc rule windowtype~'_NET_WM_WINDOW_TYPE_(DIALOG|UTILITY|SPLASH)' floating=on
 hc rule windowtype='_NET_WM_WINDOW_TYPE_DIALOG' focus=on
@@ -90,6 +102,10 @@ hc rule class=Alacritty focus=on
 hc rule class~'^[Bb]rave-origin$' focus=on
 hc rule class=Rofi manage=off
 hc rule class=dunst manage=off
+# Polybar network module: centered NetworkManager TUI.
+hc rule label=sartoria-nmtui class=sartoria-nmtui floating=on floatplacement=center focus=on
+# Super+K keybind cheatsheet.
+hc rule label=sartoria-keys class=sartoria-keys floating=on floatplacement=center focus=on
 # LibreOffice: gtk3 VCL + the DIALOG/UTILITY/SPLASH rule above. Do not
 # add class=Soffice or class=libreoffice — the document first-maps with
 # those classes and would stay floating after it becomes libreoffice-writer.

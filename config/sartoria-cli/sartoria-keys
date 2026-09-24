@@ -1,0 +1,257 @@
+#!/bin/sh
+# Searchable keybind cheatsheet. Super+K toggles a centered floating window.
+# Each row is the chord and a short description. The underlying command is omitted.
+set -eu
+
+describe_binds() {
+  herbstclient list_keybinds | awk -F '\t' '
+    function describe(cmd,    n) {
+      if (cmd ~ /(^| )sartoria-keys$/) return "Show key bindings"
+      if (cmd == "spawn alacritty") return "Terminal"
+      if (cmd ~ /^spawn rofi /) return "Application launcher"
+      if (cmd ~ /(^| )sartoria-browser$/) return "Browser"
+      if (cmd == "close") return "Close window"
+      if (cmd == "reload") return "Reload window manager"
+      if (cmd == "quit") return "Exit session"
+      if (cmd == "focus left") return "Focus left"
+      if (cmd == "focus down") return "Focus down"
+      if (cmd == "focus up") return "Focus up"
+      if (cmd == "focus right") return "Focus right"
+      if (cmd == "shift left") return "Move window left"
+      if (cmd == "shift down") return "Move window down"
+      if (cmd == "shift up") return "Move window up"
+      if (cmd == "shift right") return "Move window right"
+      if (cmd ~ /^split right /) return "Split right"
+      if (cmd ~ /^split bottom /) return "Split down"
+      if (cmd ~ /^floating /) return "Toggle floating"
+      if (cmd ~ /^fullscreen /) return "Fullscreen"
+      if (cmd ~ /^pseudotile /) return "Toggle pseudotile"
+      if (cmd == "remove") return "Remove frame"
+      if (cmd == "cycle_layout") return "Next layout"
+      if (cmd == "cycle_all +1") return "Next window"
+      if (cmd == "cycle_all -1") return "Previous window"
+      if (cmd ~ /^use_index [0-9]+$/) {
+        n = cmd
+        sub(/^use_index /, "", n)
+        return "Go to tag " (n + 1)
+      }
+      if (cmd ~ /^move_index [0-9]+$/) {
+        n = cmd
+        sub(/^move_index /, "", n)
+        return "Move window to tag " (n + 1)
+      }
+      if (cmd ~ /wpctl set-volume/ && cmd ~ /5%\+$/) return "Raise volume"
+      if (cmd ~ /wpctl set-volume/ && cmd ~ /5%-$/) return "Lower volume"
+      if (cmd ~ /wpctl set-mute/ && cmd ~ /SINK/) return "Mute audio"
+      if (cmd ~ /wpctl set-mute/ && cmd ~ /SOURCE/) return "Mute microphone"
+      if (cmd ~ /sartoria-brightness/ && cmd ~ / up$/) return "Increase brightness"
+      if (cmd ~ /sartoria-brightness/ && cmd ~ / down$/) return "Decrease brightness"
+      return ""
+    }
+
+    function rank_of(cmd) {
+      if (cmd ~ /sartoria-keys/) return 10
+      if (cmd == "spawn alacritty") return 20
+      if (cmd ~ /^spawn rofi /) return 21
+      if (cmd ~ /sartoria-browser/) return 22
+      if (cmd == "close") return 30
+      if (cmd == "reload") return 31
+      if (cmd == "quit") return 32
+      if (cmd ~ /^focus /) return 40
+      if (cmd ~ /^shift /) return 41
+      if (cmd ~ /^split /) return 50
+      if (cmd ~ /^floating /) return 51
+      if (cmd ~ /^fullscreen /) return 52
+      if (cmd ~ /^pseudotile /) return 53
+      if (cmd == "remove") return 54
+      if (cmd == "cycle_layout") return 55
+      if (cmd == "cycle_all +1") return 56
+      if (cmd == "cycle_all -1") return 57
+      if (cmd ~ /^use_index /) return 60
+      if (cmd ~ /^move_index /) return 61
+      if (cmd ~ /wpctl set-volume/ && cmd ~ /5%\+$/) return 70
+      if (cmd ~ /wpctl set-volume/ && cmd ~ /5%-$/) return 71
+      if (cmd ~ /wpctl set-mute/ && cmd ~ /SINK/) return 72
+      if (cmd ~ /wpctl set-mute/ && cmd ~ /SOURCE/) return 73
+      if (cmd ~ /sartoria-brightness/ && cmd ~ / up$/) return 74
+      if (cmd ~ /sartoria-brightness/ && cmd ~ / down$/) return 75
+      return 90
+    }
+
+    function pretty_key(token) {
+      if (token == "space") return "Space"
+      if (token == "XF86AudioRaiseVolume") return "Volume up"
+      if (token == "XF86AudioLowerVolume") return "Volume down"
+      if (token == "XF86AudioMute") return "Mute"
+      if (token == "XF86AudioMicMute") return "Microphone mute"
+      if (token == "XF86MonBrightnessUp") return "Brightness up"
+      if (token == "XF86MonBrightnessDown") return "Brightness down"
+      if (length(token) == 1) return toupper(token)
+      return token
+    }
+
+    function combo_of(super, alt, ctrl, shift, key,    s, keyp) {
+      s = ""
+      if (super && alt) s = "Super / Alt"
+      else if (super) s = "Super"
+      else if (alt) s = "Alt"
+      if (ctrl) s = (s == "" ? "Ctrl" : s " + Ctrl")
+      if (shift) s = (s == "" ? "Shift" : s " + Shift")
+      keyp = pretty_key(key)
+      if (s == "") return keyp
+      return s " + " keyp
+    }
+
+    {
+      cmd = ""
+      for (i = 2; i <= NF; i++) cmd = cmd (i == 2 ? "" : " ") $i
+      desc = describe(cmd)
+      if (desc == "") next
+
+      super = 0
+      alt = 0
+      ctrl = 0
+      shift = 0
+      key = ""
+      nparts = split($1, parts, "+")
+      for (i = 1; i <= nparts; i++) {
+        if (parts[i] == "Mod4") super = 1
+        else if (parts[i] == "Mod1") alt = 1
+        else if (parts[i] == "Control" || parts[i] == "Ctrl") ctrl = 1
+        else if (parts[i] == "Shift") shift = 1
+        else key = parts[i]
+      }
+
+      sig = ctrl SUBSEP shift SUBSEP key SUBSEP cmd
+      if (!(sig in seen)) {
+        seen[sig] = 1
+        seq[sig] = ++n
+        order[n] = sig
+        rank[sig] = rank_of(cmd)
+        desc_of[sig] = desc
+        key_of[sig] = key
+        ctrl_of[sig] = ctrl
+        shift_of[sig] = shift
+      }
+      if (super) super_of[sig] = 1
+      if (alt) alt_of[sig] = 1
+    }
+
+    END {
+      for (i = 1; i <= n; i++) {
+        sig = order[i]
+        combo = combo_of(super_of[sig], alt_of[sig], ctrl_of[sig], shift_of[sig], key_of[sig])
+        printf "%03d %05d\t%s\t%s\n", rank[sig], seq[sig], combo, desc_of[sig]
+      }
+      printf "080 00001\tSuper + Left drag\tMove window\n"
+      printf "081 00001\tSuper + Right drag\tResize window\n"
+      printf "082 00001\tSuper + Middle drag\tResize from center\n"
+    }
+  '
+}
+
+format_binds() {
+  describe_binds | sort -k1,1n -k2,2n | awk -F '\t' '
+    {
+      combo[NR] = $2
+      desc[NR] = $3
+      if (length($2) > width) width = length($2)
+    }
+    END {
+      for (i = 1; i <= NR; i++)
+        printf "%-*s  %s\n", width, combo[i], desc[i]
+    }
+  '
+}
+
+run_menu() {
+  if ! command -v gum >/dev/null 2>&1; then
+    echo "sartoria-keys: gum is not installed" >&2
+    sleep 2
+    exit 1
+  fi
+
+  text=$(format_binds)
+  count=$(printf '%s\n' "$text" | grep -c .)
+  height=$count
+  if [ "$height" -gt 16 ]; then
+    height=16
+  fi
+
+  # shellcheck disable=SC2086
+  printf '%s\n' "$text" | gum filter \
+    --no-sort \
+    --fuzzy \
+    --height "$height" \
+    --header "Key bindings" \
+    --placeholder "Search" \
+    --prompt "› " \
+    --indicator "●" \
+    --header.foreground "#7aa2f7" \
+    --prompt.foreground "#7aa2f7" \
+    --indicator.foreground "#7aa2f7" \
+    --match.foreground "#7aa2f7" \
+    --text.foreground "#c0caf5" \
+    --placeholder.foreground "#565f89" \
+    --cursor-text.foreground "#c0caf5" >/dev/null
+}
+
+find_keys_window() {
+  herbstclient foreach CLIENT clients. --unique echo CLIENT 2>/dev/null |
+    while read -r path; do
+      class=$(herbstclient attr "$path.class" 2>/dev/null) || continue
+      if [ "$class" = sartoria-keys ]; then
+        printf '%s\n' "${path#clients.}"
+        break
+      fi
+    done
+}
+
+if [ "${1:-}" = menu ]; then
+  run_menu
+  exit 0
+fi
+
+if [ "${1:-}" = print ]; then
+  format_binds
+  exit 0
+fi
+
+focused=$(herbstclient attr clients.focus.winid 2>/dev/null || true)
+existing=$(find_keys_window || true)
+if [ -n "$existing" ]; then
+  if [ "$existing" = "$focused" ]; then
+    herbstclient close "$existing"
+  else
+    herbstclient jumpto "$existing"
+  fi
+  exit 0
+fi
+
+text=$(format_binds)
+cols=$(printf '%s\n' "$text" | awk 'length > m { m = length } END { print m + 3 }')
+count=$(printf '%s\n' "$text" | grep -c .)
+lines=$count
+if [ "$lines" -gt 16 ]; then
+  lines=16
+fi
+lines=$((lines + 3))
+
+herbstclient spawn alacritty \
+  --class sartoria-keys,sartoria-keys \
+  -T "Key bindings" \
+  -o 'window.decorations="None"' \
+  -o "window.dimensions.columns=$cols" \
+  -o "window.dimensions.lines=$lines" \
+  -e sartoria-keys menu
+
+i=0
+while [ "$i" -lt 40 ]; do
+  existing=$(find_keys_window || true)
+  if [ -n "$existing" ]; then
+    herbstclient jumpto "$existing"
+    exit 0
+  fi
+  i=$((i + 1))
+  sleep 0.05
+done

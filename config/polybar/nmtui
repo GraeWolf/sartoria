@@ -1,0 +1,17 @@
+#!/bin/sh
+# Open NetworkManager's TUI in a centered floating terminal.
+# herbstluftwm rule label=sartoria-nmtui places the window.
+for path in $(herbstclient foreach CLIENT clients. --unique echo CLIENT); do
+  class=$(herbstclient attr "$path.class" 2>/dev/null) || continue
+  if [ "$class" = sartoria-nmtui ]; then
+    herbstclient jumpto "${path#clients.}"
+    exit 0
+  fi
+done
+
+exec alacritty \
+  --class sartoria-nmtui,sartoria-nmtui \
+  -T Network \
+  -o window.dimensions.columns=80 \
+  -o window.dimensions.lines=24 \
+  -e nmtui
