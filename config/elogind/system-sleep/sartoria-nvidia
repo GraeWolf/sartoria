@@ -1,8 +1,14 @@
 #!/bin/sh
 # elogind sleep hook for this G15.
 # Do not write /proc/driver/nvidia/suspend (hung: fans, no s2idle).
-# Do not toggle USB authorized when the keyboard is already back: that
-# re-enumerates hid_asus and zeros asus::kbd_backlight.
+# After s2idle the ITE keyboard (0b05:19b6) often stays enumerated and
+# stops sending reports. Always re-enumerate it. That zeros
+# asus::kbd_backlight; the saved value is written back afterwards.
+# Do not reset i8042. "echo reset" reconnects atkbd, which sends
+# ATKBD_CMD_RESET_DIS (0xF5). This EC logs "Failed to deactivate
+# keyboard on isa0060/serio0" and then stops responding until a hard
+# power-off. i8042.dumbkbd=1 on the cmdline stops the kernel from
+# sending that command on its own resume path.
 # $1 = pre|post  $2 = suspend|hibernate|...
 KBD_VENDOR=0b05
 KBD_PRODUCT=19b6
@@ -12,13 +18,16 @@ SAVE=/run/sartoria-kbd-backlight
 
 log() {
   logger -t sartoria-nvidia -- "$@" 2>/dev/null || true
+  printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo '?')" "$*" \
+    >> /var/log/sartoria-sleep.log 2>/dev/null || true
 }
 
-asus_kbd_present() {
+kbd_sysfs() {
   for d in /sys/bus/usb/devices/*; do
     [ -f "$d/idVendor" ] && [ -f "$d/idProduct" ] || continue
     [ "$(cat "$d/idVendor")" = "$KBD_VENDOR" ] || continue
     [ "$(cat "$d/idProduct")" = "$KBD_PRODUCT" ] || continue
+    printf '%s\n' "$d"
     return 0
   done
   return 1
@@ -32,7 +41,7 @@ save_backlight() {
 
 restore_backlight() {
   n=0
-  while [ ! -w "$LED" ] && [ "$n" -lt 5 ]; do
+  while [ ! -w "$LED" ] && [ "$n" -lt 8 ]; do
     sleep 1
     n=$((n + 1))
   done
@@ -47,15 +56,36 @@ restore_backlight() {
   if [ -w "$LED" ]; then
     echo "$val" > "$LED" 2>/dev/null || true
     log "kbd backlight -> $val"
+  else
+    log "kbd backlight node missing; left unrestored"
   fi
 }
 
-reset_xhci_if_kbd_gone() {
-  asus_kbd_present && return 0
+reset_xhci() {
   [ -e "/sys/bus/pci/drivers/xhci_hcd/$XHCI" ] || return 0
   log "ASUS keyboard missing; reset xhci $XHCI"
   echo "$XHCI" > /sys/bus/pci/drivers/xhci_hcd/unbind 2>/dev/null || true
+  sleep 1
   echo "$XHCI" > /sys/bus/pci/drivers/xhci_hcd/bind 2>/dev/null || true
+}
+
+# Re-authorize even when the device is still present. Presence is not
+# the same as working keys.
+reenumerate_kbd() {
+  dev=$(kbd_sysfs) || dev=
+  if [ -n "$dev" ] && [ -w "$dev/authorized" ]; then
+    log "re-enumerate ASUS keyboard $(basename "$dev")"
+    echo 0 > "$dev/authorized" 2>/dev/null || true
+    sleep 1
+    if [ ! -w "$dev/authorized" ]; then
+      dev=$(kbd_sysfs) || dev=
+    fi
+    if [ -n "$dev" ] && [ -w "$dev/authorized" ]; then
+      echo 1 > "$dev/authorized" 2>/dev/null || true
+      return 0
+    fi
+  fi
+  reset_xhci
 }
 
 kick_i2c_hid_if_missing() {
@@ -82,9 +112,10 @@ case "$1" in
     ;;
   post)
     sleep 1
-    reset_xhci_if_kbd_gone
+    reenumerate_kbd
     kick_i2c_hid_if_missing
     restore_backlight
+    chmod 644 /var/log/sartoria-sleep.log 2>/dev/null || true
     ;;
 esac
 exit 0

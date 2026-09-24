@@ -35,6 +35,27 @@ if [ "$1" = configure ]; then
       echo 3 > "$led" 2>/dev/null || true
     fi
   fi
-  echo "sartoria-nvidia: reboot required (S0ix on, PVMA off). Then startx. Offload: sartoria nvidia glxinfo -B" >&2
+  if [ -x /etc/init.d/rsyslog ]; then
+    /etc/init.d/rsyslog restart >/dev/null 2>&1 || true
+  fi
+  # The AC-plug console flood is root:adm. Leave a readable count of the
+  # repeated kernel lines so it can be identified without that group.
+  if [ -r /var/log/kern.log ]; then
+    awk '
+      {
+        line = $0
+        sub(/^[A-Za-z]{3} +[0-9]+ [0-9:]+ [^ ]+ kernel: /, "", line)
+        sub(/^\[[ 0-9.]+\] /, "", line)
+      }
+      /atkbd|sartoria-nvidia|Spurious|ucsi|xhci|AER|nvidia|amdgpu|i8042|Failed to deactivate/ {
+        n[line]++
+      }
+      END {
+        for (m in n) printf "%9d %s\n", n[m], m
+      }
+    ' /var/log/kern.log 2>/dev/null | sort -nr | head -40 > /var/log/sartoria-kern-excerpt.txt || true
+    chmod 644 /var/log/sartoria-kern-excerpt.txt 2>/dev/null || true
+  fi
+  echo "sartoria-nvidia: reboot required (S0ix on, i8042.dumbkbd=1). Do not close the lid until /proc/cmdline shows i8042.dumbkbd=1." >&2
 fi
 exit 0

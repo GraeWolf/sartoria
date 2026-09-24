@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_NVIDIA_VERSION:-0.0.7}"
+VERSION="${SARTORIA_NVIDIA_VERSION:-0.0.9}"
 PKG=sartoria-nvidia
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"
@@ -22,6 +22,7 @@ mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/etc/modprobe.d" \
   "$STAGE/etc/elogind/sleep.conf.d" \
   "$STAGE/etc/default/grub.d" \
+  "$STAGE/etc/rsyslog.d" \
   "$STAGE/var/lib/nvidia"
 
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-nvidia-run" "$STAGE/usr/bin/sartoria-nvidia-run"
@@ -35,6 +36,8 @@ install -m 0644 "$ROOT/config/elogind/sleep.conf.d/20-sartoria-nvidia.conf" \
   "$STAGE/etc/elogind/sleep.conf.d/20-sartoria-nvidia.conf"
 install -m 0644 "$ROOT/config/grub.d/sartoria-nvidia.cfg" \
   "$STAGE/etc/default/grub.d/sartoria-nvidia.cfg"
+install -m 0644 "$ROOT/config/rsyslog.d/sartoria-nvidia.conf" \
+  "$STAGE/etc/rsyslog.d/sartoria-nvidia.conf"
 
 cat > "$STAGE/usr/share/doc/$PKG/copyright" <<'EOF'
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/

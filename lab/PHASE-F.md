@@ -9,7 +9,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | Id | Item | Status |
 | --- | --- | --- |
 | F1 | Alacritty / Nerd Font actually installed; monospace, not DejaVu Sans | done (`sartoria-desktop` 0.0.3 on voyager) |
-| F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.6 s2idle+keys work; 0.0.6 zeroed kbd backlight (USB reset). 0.0.7 restores LED |
+| F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.9 passed one lid cycle on 2026-09-24 03:40 (keys work, hook re-enumerated `1-3`, backlight restored to 3). AC-plug spam is the Samsung NVMe AER, still open |
 | F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | package in tree; install on voyager needs sudo |
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
 | F4 | Remaining daily bits (file manager, screenshots, laptop DPI) | not started |
@@ -129,6 +129,44 @@ sudo apt-get install ./lab/cache/sartoria-nvidia_0.0.7_all.deb
 ```
 
 No reboot required for the hook. If the keys are dark now: `echo 3 | sudo tee /sys/class/leds/asus::kbd_backlight/brightness` (postinst does that when upgrading from < 0.0.7).
+
+0.0.7 left the keys dead again. The ITE device (`0b05:19b6` on xHCI `07:00.3`) was still in sysfs after s2idle, so the hook skipped the reset, but the reports had stopped. There is also an i8042 AT keyboard with a full keymap; 0.0.7 never touched it. 0.0.8 always de-authorizes and re-authorizes the ITE device (xHCI reset only if that node is gone), resets `serio0`, then writes the saved backlight back. Re-enumeration still zeros the LED; the restore is what puts it back.
+
+```bash
+./scripts/build-sartoria-nvidia.sh
+sudo apt-get install ./lab/cache/sartoria-nvidia_0.0.8_all.deb
+```
+
+No reboot. Close the lid, wait until the fans drop, open it, and type. `grep sartoria-nvidia /var/log/syslog` should show `re-enumerate ASUS keyboard` and `kbd backlight -> N`. If the fans ramp and the chassis heats, that is still a failed suspend, not this resume bug.
+
+0.0.8 was installed and the lid test failed. On open, the console showed:
+
+```
+atkbd serio0: Failed to deactivate keyboard on isa0060/serio0
+```
+
+three times in one boot (kernel timestamps 4636s, 5030s, 23121s). That is `ATKBD_CMD_RESET_DIS` (0xF5). The kernel sends it from `atkbd_reconnect` on every resume, and 0.0.8 also ran `echo reset` on `serio0`, which does the same reconnect. Keyboards that reject 0xF5 stop responding until a hard power-off. A warm reboot is not enough.
+
+After that reboot, plugging AC back in made the session stall (touchpad log: "your system is too slow" from 02:40) and switching to tty2 at 02:53 showed a scrolling kernel flood. X exited cleanly on the VT switch. The flood is in `/var/log/kern.log` (adm-only, ~25 MB). 0.0.9's postinst writes a readable count to `/var/log/sartoria-kern-excerpt.txt`.
+
+0.0.9:
+
+- resume hook no longer touches i8042
+- still re-enumerates the ITE keyboard and restores the backlight
+- `i8042.dumbkbd=1` so the kernel's own resume path does not send 0xF5
+- `/var/log/sartoria-sleep.log` (mode 644) and `kern.err` copied to `/var/log/sartoria-kern.log`
+
+```bash
+./scripts/build-sartoria-nvidia.sh
+sudo apt-get install ./lab/cache/sartoria-nvidia_0.0.9_all.deb
+sudo reboot
+```
+
+After reboot, before a lid test: `grep dumbkbd /proc/cmdline`. If the login keyboard is dead, remove `i8042.dumbkbd=1` from the GRUB entry. Do not close the lid until the parameter is on the command line.
+
+2026-09-24 03:40, one lid cycle on 0.0.9 with `i8042.dumbkbd=1`: the machine slept, woke, and the keyboard worked. `/var/log/sartoria-sleep.log` shows `re-enumerate ASUS keyboard 1-3` and `kbd backlight -> 3`. AT keyboard, USB keyboard, and the touchpad were all present afterward. No `Failed to deactivate` on that resume.
+
+The AC-plug console flood is the Samsung NVMe `144d:a80a` at `0000:02:00.0` (bridge `00:01.2`): `pcieport 0000:00:01.2: AER: Multiple Correctable error message received from 0000:02:00.0`, from 02:39 through the tty switch at 02:53. Not the keyboard. Left as-is for this pass.
 
 ## F2 — Brave Origin
 
