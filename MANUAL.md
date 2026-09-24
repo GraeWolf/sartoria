@@ -140,6 +140,20 @@ Super+e opens Nautilus. Print selects a region, Shift+Print grabs the whole scre
 export SARTORIA_DPI=96
 ```
 
+## Games (Steam)
+
+Not on the installer ISO. Needs the NVIDIA package and the i386 architecture.
+
+```bash
+sudo dpkg --add-architecture i386
+sudo apt-get update
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-games.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.8_all.deb ./lab/cache/sartoria-games_0.0.1_all.deb
+```
+
+Super+g launches Steam on the NVIDIA GPU. The menu item is “Steam (NVIDIA)”. The upstream “Steam” item leaves the game on the iGPU. The first launch downloads the client. Reload herbstluftwm (Super+Shift+r) if the bind is missing. Existing autostart is not overwritten.
+
 ## Rescue (development only)
 
 XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is allowed **on the lab machine** while debugging. Sartoria still ships XLibre.
@@ -158,6 +172,7 @@ If Alacritty glyphs collide or have holes between letters, the Nerd Font is miss
 | Super+Space | launcher (rofi) |
 | Super+b | browser (Brave Origin, after `sartoria-origin`) |
 | Super+e | file manager (Nautilus, after `sartoria-daily`) |
+| Super+g | Steam on the NVIDIA GPU (after `sartoria-games`) |
 | Print | screenshot a region |
 | Shift+Print | screenshot the whole screen |
 | Super+q | close window |

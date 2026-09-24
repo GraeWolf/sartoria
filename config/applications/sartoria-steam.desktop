@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Steam (NVIDIA)
+Comment=Steam with Prime offload onto the NVIDIA GPU
+Exec=sartoria-steam %U
+Icon=steam
+Terminal=false
+Type=Application
+Categories=Game;
+StartupWMClass=Steam

@@ -1,0 +1,21 @@
+Source: sartoria-games
+Section: metapackages
+Priority: optional
+Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.0
+Homepage: https://github.com/kmccuddy/sartoria
+
+Package: sartoria-games
+Architecture: all
+Depends: sartoria-desktop (>= 0.0.8),
+         sartoria-nvidia (>= 0.0.9),
+         steam-installer,
+         steam-devices,
+         nvidia-driver-libs:i386,
+         nvidia-vulkan-icd:i386,
+         xdg-desktop-portal-gtk,
+         ${misc:Depends}
+Description: Sartoria Steam (Phase F5)
+ Steam from Excalibur contrib, launched with Prime offload.
+ Not on the v0.1 ISO. Requires the i386 architecture.

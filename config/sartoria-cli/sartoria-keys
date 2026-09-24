@@ -11,6 +11,7 @@ describe_binds() {
       if (cmd ~ /^spawn rofi /) return "Application launcher"
       if (cmd ~ /(^| )sartoria-browser$/) return "Browser"
       if (cmd ~ /(^| )sartoria-files$/) return "File manager"
+      if (cmd ~ /(^| )sartoria-steam$/) return "Steam"
       if (cmd ~ /sartoria-shot region$/) return "Screenshot a region"
       if (cmd ~ /sartoria-shot full$/) return "Screenshot the screen"
       if (cmd == "close") return "Close window"
@@ -58,6 +59,7 @@ describe_binds() {
       if (cmd ~ /^spawn rofi /) return 21
       if (cmd ~ /sartoria-browser/) return 22
       if (cmd ~ /sartoria-files/) return 23
+      if (cmd ~ /sartoria-steam/) return 24
       if (cmd ~ /sartoria-shot region$/) return 76
       if (cmd ~ /sartoria-shot full$/) return 77
       if (cmd == "close") return 30

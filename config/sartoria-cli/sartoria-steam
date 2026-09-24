@@ -1,0 +1,13 @@
+#!/bin/sh
+# Steam on the dGPU. Games launched from this client inherit Prime offload.
+# The session stays on the iGPU. The upstream Steam menu item does not.
+set -eu
+if [ ! -x /usr/bin/sartoria-nvidia-run ]; then
+  echo "sartoria-steam: install sartoria-nvidia first" >&2
+  exit 1
+fi
+if ! command -v steam >/dev/null 2>&1; then
+  echo "sartoria-steam: steam is not installed" >&2
+  exit 1
+fi
+exec /usr/bin/sartoria-nvidia-run steam "$@"

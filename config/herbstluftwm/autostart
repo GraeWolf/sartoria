@@ -52,6 +52,9 @@ fi
 if command -v sartoria-files >/dev/null 2>&1; then
   bind e spawn sartoria-files
 fi
+if command -v sartoria-steam >/dev/null 2>&1; then
+  bind g spawn sartoria-steam
+fi
 
 bind h focus left
 bind j focus down
@@ -118,6 +121,16 @@ hc rule label=sartoria-keys class=sartoria-keys floating=on floatplacement=cente
 # LibreOffice: gtk3 VCL + the DIALOG/UTILITY/SPLASH rule above. Do not
 # add class=Soffice or class=libreoffice — the document first-maps with
 # those classes and would stay floating after it becomes libreoffice-writer.
+# Steam dialogs share a class with the library. Match titles only.
+if command -v sartoria-steam >/dev/null 2>&1; then
+  steam_class='^[Ss]team(webhelper)?$'
+  for title in 'Friends List' 'Friends' 'Steam Dialog'; do
+    hc rule class~"$steam_class" title="$title" floating=on focus=on
+  done
+  hc rule class~"$steam_class" title~'[Ss]ettings' floating=on focus=on
+  hc rule class~"$steam_class" title~' - Chat$' floating=on focus=on
+  hc rule class~"$steam_class" title~'(Properties|Progress)' floating=on focus=on
+fi
 
 hc unlock
 

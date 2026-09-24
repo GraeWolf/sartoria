@@ -13,7 +13,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | installed on voyager (`brave-origin` 1.95.104; `brave-browser` pinned to -1) |
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
 | F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Print is bound to `sartoria-shot` |
-| F5 | Optional `sartoria-games` | not started |
+| F5 | Optional `sartoria-games` (Steam on the dGPU) | installed on voyager (`sartoria-games` 0.0.1, i386, Super+g, Prime offload). "Sign in to Steam" still tiles |
 | F6 | Laptop LUKS profile on a **spare** disk / second install | not started |
 | F7 | Optional `sartoria-ai` (last) | not started |
 
@@ -229,9 +229,34 @@ Exit F4: `dpkg -s nautilus` and `dpkg -s maim` are `ii`; `apt-cache policy hyprl
 
 2026-09-24 on voyager: `sartoria-desktop` 0.0.7 and `sartoria-daily` 0.0.1 are installed. `sartoria-files` mapped Nautilus (`org.gnome.Nautilus`) tiled. `xrdb` reports `Xft.dpi: 144`. `hyprland` and `hyprpolkitagent` are pin priority -1. Print and Shift+Print are bound to `sartoria-shot`. `maim` plus `xclip` produced an `image/png` clipboard target.
 
+## F5 — Steam
+
+`sartoria-games` 0.0.1. Not on the v0.1 ISO. NVIDIA Prime is already on this machine (`sartoria-nvidia` 0.0.9), so games can offload.
+
+Excalibur `steam-installer` 1:1.0.0.83~ds-3 (contrib) is a downloader plus the library set. `steam-libs-i386` is invisible until i386 is enabled:
+
+```bash
+sudo dpkg --add-architecture i386
+sudo apt-get update
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-games.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.8_all.deb ./lab/cache/sartoria-games_0.0.1_all.deb
+```
+
+`sartoria-desktop` 0.0.8 is the session autostart with the Steam rules. `sartoria-steam` execs `sartoria-nvidia-run steam`, so the client and its games use the 3060. Super+g and Alt+g. “Steam (NVIDIA)” is the offload menu item. The upstream “Steam” item is still the iGPU client.
+
+Depends also pulls `steam-devices`, `nvidia-driver-libs:i386`, `nvidia-vulkan-icd:i386`, and `xdg-desktop-portal-gtk` (already installed here; the X11 portal, so apt does not pick a Wayland backend).
+
+Dialog rules match titles on class `steam` / `Steam` / `steamwebhelper`: Friends, Friends List, Steam Dialog, settings, ` - Chat`, Properties, Progress. They do not float every `class=Steam` window. The library stays tileable. The generic DIALOG rule still covers typed dialogs.
+
+`seed-user-config` does not overwrite `~/.config/herbstluftwm/autostart`. Reload after that file has the new bind and rules. The first `sartoria-steam` downloads the client into the home directory.
+
+Exit F5: `dpkg -s steam-installer` is `ii`, `dpkg --print-foreign-architectures` includes `i386`, Super+g starts Steam through `sartoria-nvidia-run`, a Steam dialog with one of those titles floats, and the library window can tile.
+
+2026-09-24 on voyager: `sartoria-desktop` 0.0.8 and `sartoria-games` 0.0.1 are installed. i386 is enabled. Super+g and Alt+g spawn `sartoria-steam`. The running client has `__NV_PRIME_RENDER_OFFLOAD=1`. The first window is class `steam`, title "Sign in to Steam", and it is tiled. That title is not in the float rules.
+
 ## Later
 
-- **F5.** `sartoria-games` after NVIDIA; optional.
 - **F6.** LUKS installer profile. Prove on a spare disk. v0.1 stays whole-disk ext4, no encryption.
 - **F7.** `sartoria-ai` last and optional.
 

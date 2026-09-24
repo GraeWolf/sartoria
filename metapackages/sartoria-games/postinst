@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+  echo "sartoria-games: Super+g launches Steam on the NVIDIA GPU." >&2
+  echo "sartoria-games: the upstream Steam menu item does not offload." >&2
+  echo "sartoria-games: reload herbstluftwm (Super+Shift+r) for the bind and dialog rules." >&2
+  echo "sartoria-games: the first launch downloads the Steam client into the home directory." >&2
+fi
+exit 0
