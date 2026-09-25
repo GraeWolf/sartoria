@@ -132,7 +132,7 @@ Not on the installer ISO. Nautilus and screenshots are `sartoria-daily`. DPI is 
 sudo apt-get install ./lab/cache/sartoria-desktop_0.0.7_all.deb ./lab/cache/sartoria-daily_0.0.1_all.deb
 ```
 
-Super+e opens Nautilus. Print selects a region, Shift+Print grabs the whole screen. Both save a PNG under `~/Pictures/Screenshots` and copy it. Reload herbstluftwm (Super+Shift+r) if the binds are missing. Existing autostart is not overwritten.
+Super+e opens Nautilus. Super+p selects a region, Super+Shift+p grabs the whole screen. Both save a PNG under `~/Pictures/Screenshots` and copy it. Reload herbstluftwm (Super+Shift+r) if the binds are missing. Existing autostart is not overwritten.
 
 `Xft.dpi` stays 96 on a normal display, including the VM. A panel at or above 140 DPI (this G15 is about 189) gets 144 on the next `startx`. To force a value, export it in `~/.xinitrc` before `sartoria-session`:
 
@@ -173,8 +173,9 @@ If Alacritty glyphs collide or have holes between letters, the Nerd Font is miss
 | Super+b | browser (Brave Origin, after `sartoria-origin`) |
 | Super+e | file manager (Nautilus, after `sartoria-daily`) |
 | Super+g | Steam on the NVIDIA GPU (after `sartoria-games`) |
-| Print | screenshot a region |
-| Shift+Print | screenshot the whole screen |
+| Super+p | screenshot a region |
+| Super+Shift+p | screenshot the whole screen |
+| Super+Shift+s | toggle pseudotile |
 | Super+q | close window |
 | Super+Shift+e | exit session |
 | Super+1..9 | use tag |

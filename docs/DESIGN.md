@@ -228,7 +228,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F3.** LibreOffice from Excalibur. `sartoria-office` depends on `libreoffice` + `libreoffice-gtk3`. Dialogs float via gtk3 VCL and the generic DIALOG rule. No third-party repo. Not a v0.1 ISO gate.
 
-**F4.** Daily bits, once F1–F3 do not block work. Not a v0.1 ISO gate. `sartoria-daily` is Nautilus (`sartoria-files`, Super+e) and `maim` screenshots (`sartoria-shot`, Print and Shift+Print). No third-party repo. The session is X11. `sartoria-desktop` pins `hyprland`, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` to priority -1. Laptop DPI is `sartoria-dpi` in `sartoria-desktop`: a panel at or above 140 DPI gets `Xft.dpi` 144 (this G15 is ~189). 96 stays for a VM. `SARTORIA_DPI` overrides. 192 is not the default; it would make this panel a 720p tiling workspace.
+**F4.** Daily bits, once F1–F3 do not block work. Not a v0.1 ISO gate. `sartoria-daily` is Nautilus (`sartoria-files`, Super+e) and `maim` screenshots (`sartoria-shot`, Super+p and Super+Shift+p). No third-party repo. The session is X11. `sartoria-desktop` pins `hyprland`, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` to priority -1. Laptop DPI is `sartoria-dpi` in `sartoria-desktop`: a panel at or above 140 DPI gets `Xft.dpi` 144 (this G15 is ~189). 96 stays for a VM. `SARTORIA_DPI` overrides. 192 is not the default; it would make this panel a 720p tiling workspace.
 
 **F5.** Optional `sartoria-games`. After NVIDIA. Not on the v0.1 ISO. Excalibur `steam-installer` (contrib) plus i386 libraries. `sartoria-steam` is Prime offload (`sartoria nvidia steam`). Super+g. Dialog rules match titles, not `class=Steam`.
 

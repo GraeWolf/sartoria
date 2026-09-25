@@ -71,7 +71,7 @@ bind o split right 0.5
 bind u split bottom 0.5
 bind s floating toggle
 bind f fullscreen toggle
-bind p pseudotile toggle
+bind Shift-s pseudotile toggle
 bind r remove
 bind Tab cycle_all +1
 bind Shift-Tab cycle_all -1
@@ -100,10 +100,11 @@ hc keybind XF86AudioMicMute spawn wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
 hc keybind XF86MonBrightnessUp spawn sartoria-brightness up
 hc keybind XF86MonBrightnessDown spawn sartoria-brightness down
 
-# Print grabs a region. Shift+Print grabs the whole screen. Not on Alt.
+# Super+p grabs a region. Super+Shift+p grabs the whole screen.
+# This laptop and the external keyboards have no Print key.
 if command -v sartoria-shot >/dev/null 2>&1; then
-  hc keybind Print spawn sartoria-shot region
-  hc keybind Shift-Print spawn sartoria-shot full
+  bind p spawn sartoria-shot region
+  bind Shift-p spawn sartoria-shot full
 fi
 
 hc rule focus=on

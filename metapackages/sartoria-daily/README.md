@@ -2,7 +2,7 @@
 
 File manager and screenshots (Phase F4). Not a VM package. Not on the installer ISO. No third-party repo. The session is X11.
 
-Nautilus is the file manager (Excalibur 48, GTK4). Super+e runs `sartoria-files`. It tiles. Dialogs use the existing DIALOG rule. Screenshots are `maim` plus `xclip`: Print selects a region, Shift+Print grabs the whole screen, both save under `~/Pictures/Screenshots` and copy the PNG.
+Nautilus is the file manager (Excalibur 48, GTK4). Super+e runs `sartoria-files`. It tiles. Dialogs use the existing DIALOG rule. Screenshots are `maim` plus `xclip`: Super+p selects a region, Super+Shift+p grabs the whole screen, both save under `~/Pictures/Screenshots` and copy the PNG.
 
 `sartoria-desktop` pins `hyprland`, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` to priority -1. This session does not install them.
 

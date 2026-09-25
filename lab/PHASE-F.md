@@ -12,7 +12,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.9 passed one lid cycle on 2026-09-24 03:40 (keys work, hook re-enumerated `1-3`, backlight restored to 3). AC-plug spam is the Samsung NVMe AER, still open |
 | F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | installed on voyager (`brave-origin` 1.95.104; `brave-browser` pinned to -1) |
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
-| F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Print is bound to `sartoria-shot` |
+| F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Super+p screenshots a region |
 | F5 | Optional `sartoria-games` (Steam on the dGPU) | installed on voyager (`sartoria-games` 0.0.1, i386, Super+g, Prime offload). "Sign in to Steam" still tiles |
 | F6 | Laptop LUKS on the installer ISO | in progress. Interactive LUKS2; unattended lab stays ext4. Not applied to voyager’s disk |
 | F7 | Optional `sartoria-ai` (last) | not started |
@@ -214,7 +214,7 @@ DPI applies on the next `startx`. Reloading herbstluftwm does not re-run it. Ope
 `sartoria-daily` 0.0.1, not on the v0.1 ISO, no third-party repo:
 
 - **Nautilus** (`sartoria-files`). Super+e and Alt+e. Excalibur 48. It tiles. Dialogs use the existing DIALOG rule. Do not add a `class=Nautilus` floating rule.
-- **Screenshots** (`sartoria-shot`, `maim`, `xclip`). Print selects a region. Shift+Print grabs the whole screen. The cursor is hidden. The PNG goes to `~/Pictures/Screenshots` and the clipboard. `SARTORIA_SCREENSHOT_DIR` overrides the directory.
+- **Screenshots** (`sartoria-shot`, `maim`, `xclip`). Super+p selects a region. Super+Shift+p grabs the whole screen. The cursor is hidden. The PNG goes to `~/Pictures/Screenshots` and the clipboard. `SARTORIA_SCREENSHOT_DIR` overrides the directory. This laptop has no Print key. Pseudotile moved to Super+Shift+s.
 - **No Hyprland.** `sartoria-desktop` pins `hyprland`, `hyprpolkitagent`, and `xdg-desktop-portal-hyprland` to -1. Apt on this machine was willing to select `hyprpolkitagent` from backports as a polkit agent. This session is X11.
 
 ```bash

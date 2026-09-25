@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 if [ "$1" = configure ]; then
-  echo "sartoria-daily: Nautilus is Super+e. Print grabs a region, Shift+Print the screen." >&2
+  echo "sartoria-daily: Nautilus is Super+e. Super+p grabs a region, Super+Shift+p the screen." >&2
   echo "sartoria-daily: reload herbstluftwm (Super+Shift+r). Existing autostart is not overwritten." >&2
 fi
 exit 0
