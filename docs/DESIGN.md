@@ -232,7 +232,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F5.** Optional `sartoria-games`. After NVIDIA. Not on the v0.1 ISO. Excalibur `steam-installer` (contrib) plus i386 libraries. `sartoria-steam` is Prime offload (`sartoria nvidia steam`). Super+g. Dialog rules match titles, not `class=Steam`.
 
-**F6.** Laptop LUKS profile on the installer ISO. An interactive install can encrypt the root with LUKS2. The EFI partition and `/boot` stay unencrypted, and the initramfs asks for the passphrase once. The unattended lab install stays whole-disk ext4. Prove that boot on a spare disk or VM before using the ISO to reinstall voyager. The v0.1 default stays unencrypted.
+**F6.** Laptop LUKS profile on the installer ISO. An interactive install can encrypt the root with LUKS2. The EFI partition and `/boot` stay unencrypted, and the initramfs asks for the passphrase once, in a Tokyo Night Plymouth box. Ext4 installs and the installer ISO pass `nosplash`. The unattended lab install stays whole-disk ext4. Prove that boot on a spare disk or VM before using the ISO to reinstall voyager. The v0.1 default stays unencrypted.
 
 **F7.** Optional `sartoria-ai`. Last. OS must work with zero AI config.
 

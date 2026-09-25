@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Sartoria
+Description=Tokyo Night disk passphrase box
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/sartoria
+ScriptFile=/usr/share/plymouth/themes/sartoria/sartoria.script

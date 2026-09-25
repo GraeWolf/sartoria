@@ -1,0 +1,235 @@
+# Tokyo Night passphrase box. Colors match the desktop:
+# background #1a1b26, surface #24283b, field #414868,
+# text #c0caf5, accent #7aa2f7, error #f7768e.
+# Cryptsetup still owns the passphrase. This script only draws.
+# Sprites are stored on global.ui. An assignment inside a function
+# would otherwise keep them only for that call.
+
+Window.SetBackgroundTopColor(0.102, 0.106, 0.149);
+Window.SetBackgroundBottomColor(0.102, 0.106, 0.149);
+
+fill_px = Image("fill.png");
+accent_px = Image("accent.png");
+entry_px = Image("entry.png");
+bullet_px = Image("bullet.png");
+
+message.sprite = Sprite();
+message.sprite.SetZ(20);
+message.sprite.SetOpacity(0);
+
+status = "boot";
+bullet_n = 0;
+ui_ready = 0;
+
+fun hide_message()
+  {
+    message.sprite.SetOpacity(0);
+  }
+
+fun show_message(text)
+  {
+    message.image = Image.Text(text, 0.969, 0.463, 0.557, 1, "JetBrains Mono 16", "left");
+    message.sprite.SetImage(message.image);
+    if (ui_ready)
+      message.sprite.SetPosition(ui.bx, ui.by + ui.bh + 20, 20);
+    else
+      message.sprite.SetPosition(Window.GetX() + 48, Window.GetY() + Window.GetHeight() / 2, 20);
+    message.sprite.SetOpacity(1);
+  }
+
+fun ensure_ui()
+  {
+    if (ui_ready)
+      return;
+    global.ui.frame.sprite = Sprite();
+    ui.frame.sprite.SetZ(9);
+    global.ui.box.sprite = Sprite();
+    ui.box.sprite.SetZ(10);
+    global.ui.entry.sprite = Sprite();
+    ui.entry.sprite.SetZ(11);
+    global.ui.label.sprite = Sprite();
+    ui.label.sprite.SetZ(12);
+    global.ui.caret.sprite = Sprite();
+    ui.caret.sprite.SetZ(14);
+    global.ui.geom_w = 0;
+    global.ui.geom_h = 0;
+    global.ui_ready = 1;
+  }
+
+fun layout(count)
+  {
+    sw = Window.GetWidth();
+    sh = Window.GetHeight();
+    if (sw < 64 || sh < 64)
+      return;
+
+    if (sh >= 1400)
+      {
+        bh = 220;
+        bw_cap = 880;
+        entry_h = 64;
+        bullet_draw = 18;
+        caret_h = 32;
+        label_gap = 22;
+        side_pad = 36;
+        label_size = "JetBrains Mono 32";
+      }
+    else
+      {
+        if (sh >= 1000)
+          {
+            bh = 184;
+            bw_cap = 760;
+            entry_h = 52;
+            bullet_draw = 14;
+            caret_h = 26;
+            label_gap = 18;
+            side_pad = 32;
+            label_size = "JetBrains Mono 26";
+          }
+        else
+          {
+            bh = 156;
+            bw_cap = 640;
+            entry_h = 44;
+            bullet_draw = 12;
+            caret_h = 22;
+            label_gap = 16;
+            side_pad = 28;
+            label_size = "JetBrains Mono 22";
+          }
+      }
+
+    bw = Math.Int(sw * 0.36);
+    if (bw < 440) bw = 440;
+    if (bw > bw_cap) bw = bw_cap;
+    if (bw > sw - 48) bw = Math.Int(sw - 48);
+    if (bh > sh - 48) bh = Math.Int(sh - 48);
+    border = 3;
+    if (bw < border * 2 + 80)
+      return;
+
+    ensure_ui();
+
+    global.ui.bx = Math.Int(Window.GetX() + (sw - bw) / 2);
+    global.ui.by = Math.Int(Window.GetY() + (sh - bh) / 2);
+    global.ui.bh = bh;
+    global.ui.bw = bw;
+
+    if (ui.geom_w != sw || ui.geom_h != sh)
+      {
+        ui.label.image = Image.Text("Passphrase", 0.753, 0.792, 0.961, 1, label_size, "left");
+        ui.label.sprite.SetImage(ui.label.image);
+        ui.frame.sprite.SetImage(accent_px.Scale(bw, bh));
+        ui.box.sprite.SetImage(fill_px.Scale(bw - border * 2, bh - border * 2));
+        global.ui.entry_w = bw - side_pad * 2;
+        global.ui.entry_h = entry_h;
+        ui.entry.sprite.SetImage(entry_px.Scale(ui.entry_w, entry_h));
+        ui.caret.sprite.SetImage(accent_px.Scale(2, caret_h));
+        global.ui.bullet_image = bullet_px.Scale(bullet_draw, bullet_draw);
+        global.ui.bullet_gap = 6;
+        global.ui.caret_h = caret_h;
+        global.ui.label_gap = label_gap;
+        global.ui.side_pad = side_pad;
+        global.ui.geom_w = sw;
+        global.ui.geom_h = sh;
+      }
+
+    ui.frame.sprite.SetPosition(ui.bx, ui.by, 9);
+    ui.frame.sprite.SetOpacity(1);
+    ui.box.sprite.SetPosition(ui.bx + border, ui.by + border, 10);
+    ui.box.sprite.SetOpacity(1);
+
+    ui.label.sprite.SetPosition(ui.bx + side_pad, ui.by + side_pad, 12);
+    ui.label.sprite.SetOpacity(1);
+
+    global.ui.entry_x = ui.bx + side_pad;
+    global.ui.entry_y = ui.by + side_pad + ui.label.image.GetHeight() + label_gap;
+    ui.entry.sprite.SetPosition(ui.entry_x, ui.entry_y, 11);
+    ui.entry.sprite.SetOpacity(1);
+
+    bullet_w = ui.bullet_image.GetWidth();
+    x = ui.entry_x + 16;
+    y = ui.entry_y + Math.Int((ui.entry_h - bullet_w) / 2);
+    max_x = ui.entry_x + ui.entry_w - 16 - bullet_w;
+    for (index = 0; ui.bullet[index] || index < count; index++)
+      {
+        if (!ui.bullet[index])
+          global.ui.bullet[index].sprite = Sprite(ui.bullet_image);
+        ui.bullet[index].sprite.SetZ(13);
+        ui.bullet[index].sprite.SetImage(ui.bullet_image);
+        if (index < count)
+          {
+            if (x < max_x || x == max_x)
+              {
+                ui.bullet[index].sprite.SetPosition(x, y, 13);
+                ui.bullet[index].sprite.SetOpacity(1);
+                x = x + bullet_w + ui.bullet_gap;
+              }
+            else
+              ui.bullet[index].sprite.SetOpacity(0);
+          }
+        else
+          ui.bullet[index].sprite.SetOpacity(0);
+      }
+
+    if (count > 0)
+      {
+        if (x < max_x || x == max_x)
+          caret_x = x;
+        else
+          caret_x = max_x;
+      }
+    else
+      caret_x = ui.entry_x + 16;
+    ui.caret.sprite.SetPosition(caret_x, ui.entry_y + Math.Int((ui.entry_h - ui.caret_h) / 2), 14);
+    ui.caret.sprite.SetOpacity(1);
+    global.bullet_n = count;
+  }
+
+fun clear_bullets()
+  {
+    if (!ui_ready)
+      return;
+    ui.caret.sprite.SetOpacity(0);
+    for (index = 0; ui.bullet[index]; index++)
+      ui.bullet[index].sprite.SetOpacity(0);
+    global.bullet_n = 0;
+  }
+
+fun refresh_callback()
+  {
+    Window.SetBackgroundTopColor(0.102, 0.106, 0.149);
+    Window.SetBackgroundBottomColor(0.102, 0.106, 0.149);
+    if (status == "password")
+      layout(bullet_n);
+  }
+
+fun display_normal_callback()
+  {
+    global.status = "boot";
+    clear_bullets();
+  }
+
+fun display_password_callback(prompt, count)
+  {
+    global.status = "password";
+    hide_message();
+    layout(count);
+  }
+
+fun display_message_callback(text)
+  {
+    show_message(text);
+  }
+
+fun hide_message_callback()
+  {
+    hide_message();
+  }
+
+Plymouth.SetRefreshFunction(refresh_callback);
+Plymouth.SetDisplayNormalFunction(display_normal_callback);
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+Plymouth.SetDisplayMessageFunction(display_message_callback);
+Plymouth.SetHideMessageFunction(hide_message_callback);

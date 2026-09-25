@@ -1,0 +1,45 @@
+#!/bin/sh
+# Put JetBrains Mono in the initramfs so the passphrase box can use it.
+# Plymouth's own hook copies only the fontconfig default faces.
+
+set -e
+
+PREREQ="plymouth"
+
+prereqs()
+{
+	echo "$PREREQ"
+}
+
+case "$1" in
+	prereqs)
+		prereqs
+		exit 0
+		;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+THEME="$(/usr/sbin/plymouth-set-default-theme 2>/dev/null || true)"
+[ "$THEME" = "sartoria" ] || exit 0
+
+FONT=""
+for candidate in \
+	/usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Regular.ttf
+do
+	if [ -f "$candidate" ]; then
+		FONT="$candidate"
+		break
+	fi
+done
+
+if [ -z "$FONT" ]; then
+	FONT="$(fc-match -f '%{file}' 'JetBrains Mono' 2>/dev/null || true)"
+fi
+
+if [ -n "$FONT" ] && [ -f "$FONT" ]; then
+	copy_file font "$FONT"
+	if [ -d "${DESTDIR}/etc/fonts" ]; then
+		fc-cache -s -y "${DESTDIR}" >/dev/null 2>&1 || true
+	fi
+fi

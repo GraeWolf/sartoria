@@ -67,6 +67,9 @@ chroot "$ROOTFS" dpkg -i /tmp/sartoria-desktop.deb || true
 chroot "$ROOTFS" apt-get install -y -f
 chroot "$ROOTFS" apt-get update
 chroot "$ROOTFS" apt-get install -y xlibre xlibre-archive-keyring
+# After elogind (sartoria-desktop). Plymouth also accepts systemd; do not
+# install it before elogind or apt can pull systemd onto this sysvinit image.
+chroot "$ROOTFS" apt-get install -y --no-install-recommends plymouth plymouth-label
 
 echo 'en_US.UTF-8 UTF-8' > "$ROOTFS/etc/locale.gen"
 chroot "$ROOTFS" locale-gen
@@ -90,6 +93,32 @@ if ! grep -q '^T0:' "$ROOTFS/etc/inittab"; then
   echo 'T0:23:respawn:/sbin/getty -L ttyS0 115200 vt100' >> "$ROOTFS/etc/inittab"
 fi
 
+# Devuan starts Plymouth unless the cmdline says nosplash. Unencrypted
+# installs stay on the text console. LUKS installs replace this with splash.
+if [[ ! -f "$ROOTFS/etc/default/grub" ]]; then
+  echo "error: /etc/default/grub missing after grub install" >&2
+  exit 1
+fi
+if grep -q '^GRUB_CMDLINE_LINUX_DEFAULT=' "$ROOTFS/etc/default/grub"; then
+  sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet nosplash"/' \
+    "$ROOTFS/etc/default/grub"
+else
+  printf '\nGRUB_CMDLINE_LINUX_DEFAULT="quiet nosplash"\n' >> "$ROOTFS/etc/default/grub"
+fi
+# No display manager. quit --retain-splash leaves the framebuffer up and the
+# tty login never appears.
+if ! grep -q 'plymouth quit --retain-splash' "$ROOTFS/etc/init.d/plymouth"; then
+  echo "error: plymouth init script has no retain-splash quit to replace" >&2
+  exit 1
+fi
+sed -i 's|plymouth quit --retain-splash|plymouth quit|' "$ROOTFS/etc/init.d/plymouth"
+
+install -d "$ROOTFS/usr/share/plymouth/themes/sartoria"
+install -m 0644 "$ROOT/config/plymouth/sartoria/"* "$ROOTFS/usr/share/plymouth/themes/sartoria/"
+install -m 0755 "$ROOT/config/plymouth/zz-sartoria-plymouth" \
+  "$ROOTFS/usr/share/initramfs-tools/hooks/zz-sartoria-plymouth"
+chroot "$ROOTFS" plymouth-set-default-theme sartoria
+
 chroot "$ROOTFS" update-initramfs -u
 KVER="$(chroot "$ROOTFS" bash -c 'ls -1 /boot/vmlinuz-*' | sed 's#.*/vmlinuz-##' | tail -n1)"
 cp "$ROOTFS/boot/vmlinuz-$KVER" "$ISOTREE/live/vmlinuz"
@@ -110,11 +139,11 @@ terminal_output console serial
 set timeout=$timeout
 set default=$default
 menuentry "Install Sartoria" {
-  linux /live/vmlinuz boot=live components username=root hostname=sartoria-live nopersistence console=tty0 console=ttyS0,115200n8
+  linux /live/vmlinuz boot=live components username=root hostname=sartoria-live nopersistence nosplash console=tty0 console=ttyS0,115200n8
   initrd /live/initrd.img
 }
 menuentry "Install Sartoria (unattended lab)" --id unattended {
-  linux /live/vmlinuz boot=live components sartoria.auto=1 username=root hostname=sartoria-live nopersistence console=tty0 console=ttyS0,115200n8
+  linux /live/vmlinuz boot=live components sartoria.auto=1 username=root hostname=sartoria-live nopersistence nosplash console=tty0 console=ttyS0,115200n8
   initrd /live/initrd.img
 }
 EOF

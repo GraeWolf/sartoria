@@ -444,6 +444,18 @@ if [[ -d /sys/firmware/efi ]]; then
   chroot "$TARGET" grub-install --target=x86_64-efi --efi-directory=/boot/efi \
     --bootloader-id=Sartoria --recheck --no-nvram --removable || die "EFI grub-install failed"
 fi
+# Devuan's Plymouth starts unless the cmdline says nosplash. The image
+# default is "quiet nosplash". An encrypted root replaces it so the
+# initramfs draws the Tokyo Night passphrase box. This file is sourced
+# after /etc/default/grub, and it only sets DEFAULT, so the NVIDIA
+# snippet can still append to GRUB_CMDLINE_LINUX.
+if [[ "$LUKS" -eq 1 ]]; then
+  mkdir -p "$TARGET/etc/default/grub.d"
+  cat > "$TARGET/etc/default/grub.d/sartoria-luks.cfg" <<'EOF'
+# Graphical Tokyo Night passphrase box.
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+EOF
+fi
 chroot "$TARGET" update-grub || die "update-grub failed"
 
 chroot "$TARGET" rm -f /etc/ssh/ssh_host_* 2>/dev/null || true
