@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Build the Sartoria installer-first ISO. Must run on Devuan Excalibur.
+# Build the Sartoria installer-first ISO on this Devuan Excalibur machine.
+# The rootfs is a debootstrap chroot. It is not this laptop's installed system.
 set -euo pipefail
 
 if ! grep -q '^ID=devuan' /etc/os-release 2>/dev/null; then
-  echo "error: build the ISO inside a Devuan Excalibur VM/chroot, not on this host." >&2
+  echo "error: build the ISO on Devuan Excalibur. This machine is not Devuan." >&2
   exit 1
 fi
 
@@ -59,8 +60,8 @@ chroot "$ROOTFS" apt-get install -y --no-install-recommends \
   linux-image-amd64 live-boot \
   dialog gdisk parted dosfstools e2fsprogs rsync squashfs-tools \
   grub-efi-amd64 grub-pc-bin efibootmgr \
-  openssh-server locales kbd pciutils \
-  initramfs-tools
+  openssh-server locales kbd console-setup pciutils \
+  initramfs-tools cryptsetup cryptsetup-initramfs
 chroot "$ROOTFS" apt-get install -y --no-install-recommends live-boot-initramfs-tools || true
 chroot "$ROOTFS" dpkg -i /tmp/sartoria-desktop.deb || true
 chroot "$ROOTFS" apt-get install -y -f

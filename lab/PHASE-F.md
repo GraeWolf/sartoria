@@ -14,7 +14,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
 | F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Print is bound to `sartoria-shot` |
 | F5 | Optional `sartoria-games` (Steam on the dGPU) | installed on voyager (`sartoria-games` 0.0.1, i386, Super+g, Prime offload). "Sign in to Steam" still tiles |
-| F6 | Laptop LUKS profile on a **spare** disk / second install | not started |
+| F6 | Laptop LUKS on the installer ISO | in progress. Interactive LUKS2; unattended lab stays ext4. Not applied to voyager’s disk |
 | F7 | Optional `sartoria-ai` (last) | not started |
 
 Not this gate: desktop dGPU, reverse-PRIME HDMI, `sartoria-nvidia` on the v0.1 ISO. `nvidia-persistenced` stays disabled.
@@ -255,9 +255,25 @@ Exit F5: `dpkg -s steam-installer` is `ii`, `dpkg --print-foreign-architectures`
 
 2026-09-24 on voyager: `sartoria-desktop` 0.0.8 and `sartoria-games` 0.0.1 are installed. i386 is enabled. Super+g and Alt+g spawn `sartoria-steam`. The running client has `__NV_PRIME_RENDER_OFFLOAD=1`. The first window is class `steam`, title "Sign in to Steam", and it is tiled. That title is not in the float rules.
 
+## F6 — LUKS on the installer ISO
+
+The interactive installer asks whether to encrypt the root. Yes builds this layout:
+
+| Partition | Size | Filesystem |
+| --- | --- | --- |
+| bios_grub | 1M | GRUB BIOS boot |
+| EFI | 512M | vfat, unencrypted |
+| boot | 1G | ext4, unencrypted |
+| cryptroot | rest | LUKS2, ext4 inside (`sartoria_crypt`) |
+
+The passphrase is separate from the login password (8 or more characters). GRUB reads the kernel from the plain `/boot`. `cryptsetup-initramfs` asks for the passphrase once. `crypttab` is `sartoria_crypt UUID=… none luks,discard`. No is the v0.1 layout (BIOS boot, EFI, one ext4 root). `sartoria.auto=1` always takes No, so the lab ISO test does not stop for a passphrase.
+
+`scripts/build-iso.sh` installs `cryptsetup`, `cryptsetup-initramfs`, and `console-setup` into the image so the passphrase prompt can use the chosen keymap. Build it on this laptop with `./scripts/lab-build-iso.sh`. The output is `lab/iso/sartoria-0.0.1-amd64.iso`. The build chroot is not voyager's root disk.
+
+Exit F6: an encrypted install boots on a spare disk or VM, the initramfs accepts the passphrase, and the root is `/dev/mapper/sartoria_crypt`. The unattended install still has no `crypttab`. Do not point the installer at voyager’s current root until that boot has been proved.
+
 ## Later
 
-- **F6.** LUKS installer profile. Prove on a spare disk. v0.1 stays whole-disk ext4, no encryption.
 - **F7.** `sartoria-ai` last and optional.
 
 ## Exit

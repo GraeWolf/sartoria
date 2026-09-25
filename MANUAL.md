@@ -7,7 +7,7 @@ This is page one. v0.1 is the installer ISO. Keep this file honest.
 1. Write `sartoria-*-amd64.iso` to USB (`dd` or similar), or attach it as a CD in a VM.
 2. Boot it. GRUB: **Install Sartoria**.
 3. Use the **graphical/VGA console**, not serial and not SSH. The TUI is on tty1.
-4. TUI asks keyboard, hostname, user, password, **which disk to wipe**, and a YES confirm. Other disks (for example Windows) are not touched. Do not pick the Windows drive.
+4. TUI asks keyboard, hostname, user, password, **which disk to wipe**, whether to encrypt the root with LUKS2, and a YES confirm. Other disks (for example Windows) are not touched. Do not pick the Windows drive. Encryption uses a disk passphrase, not the login password. The unattended lab install does not encrypt.
 5. Reboot without the USB/ISO. Log in on tty1. Auto-startx is **off** so a failed X session does not log you out. Run `startx` when you want the desktop.
 
 

@@ -1,5 +1,6 @@
 #!/bin/bash
-# Sartoria TUI installer. Whole-disk wipe, ext4, no LUKS. Not Calamares.
+# Sartoria TUI installer. Whole-disk wipe. Interactive installs may encrypt
+# the root with LUKS2. Unattended lab installs stay ext4. Not Calamares.
 set -euo pipefail
 
 LOG=/var/log/sartoria-installer.log
@@ -88,13 +89,45 @@ ask_password() {
   printf '%s\n' "$val"
 }
 
+ask_yesno() {
+  local title="$1" text="$2" rc
+  if [[ "$AUTO" -eq 1 ]]; then
+    return 1
+  fi
+  drain_tty
+  stty sane <"$UI_TTY" 2>/dev/null || true
+  set +e
+  dialog --title "$title" --defaultno --yesno "$text" 12 72 >"$UI_TTY"
+  rc=$?
+  set -e
+  [[ "$rc" -eq 0 ]]
+}
+
+ask_luks_pass() {
+  local p1 p2
+  while true; do
+    p1="$(ask_password "Disk encryption" "LUKS passphrase for the disk (8 or more characters). This is not the login password.")"
+    p2="$(ask_password "Disk encryption" "LUKS passphrase again")"
+    if [[ "$p1" != "$p2" ]]; then
+      show_err "LUKS passphrases do not match."
+      continue
+    fi
+    if [[ ${#p1} -lt 8 ]]; then
+      show_err "LUKS passphrase must be at least 8 characters."
+      continue
+    fi
+    printf '%s\n' "$p1"
+    return 0
+  done
+}
+
 confirm_wipe() {
-  local disk="$1" typed
+  local disk="$1" extra="${2:-}" typed
   if [[ "$AUTO" -eq 1 ]]; then
     return 0
   fi
   while true; do
-    typed="$(ask "Wipe ${disk}" "Destroys all data on ${disk}. Type YES to continue, or ABORT to stop." "")"
+    typed="$(ask "Wipe ${disk}" "${extra}Destroys all data on ${disk}. Type YES to continue, or ABORT to stop." "")"
     typed="$(printf '%s' "$typed" | tr -d '[:space:]')"
     case "$typed" in
       YES) return 0 ;;
@@ -249,7 +282,17 @@ PASS2="$(ask_password "Password" "Password again")"
 DISK="$(pick_disk || true)"
 [[ -b "$DISK" ]] || die "No install disk found. Attach a virtual hard disk (>= 1G). Floppy (/dev/fd0) and CD-ROM are ignored."
 log "target disk: $DISK"
-confirm_wipe "$DISK"
+
+LUKS=0
+LUKS_PASS=""
+if ask_yesno "Encrypt disk" "Encrypt the root filesystem with LUKS2? The EFI system partition and /boot stay unencrypted so GRUB can load the kernel. The unattended lab install does not encrypt. Choose No to keep the v0.1 ext4 layout."; then
+  LUKS=1
+  LUKS_PASS="$(ask_luks_pass)"
+  confirm_wipe "$DISK" "Root will be LUKS2. "
+else
+  confirm_wipe "$DISK"
+fi
+log "encrypt=$LUKS"
 if [[ "$AUTO" -eq 0 ]]; then
   set +e
   dialog --title "Sartoria" --infobox "Installing to ${DISK}. This takes a few minutes." 5 50 >"$UI_TTY"
@@ -264,13 +307,27 @@ command -v unsquashfs >/dev/null || die "unsquashfs missing"
 SQUASH="$(squashfs_path)"
 log "payload: $SQUASH"
 
+if [[ -b /dev/mapper/sartoria_crypt ]]; then
+  cryptsetup close sartoria_crypt || true
+fi
 wipefs -a "$DISK" || true
 sgdisk --zap-all "$DISK" || die "sgdisk zap failed on $DISK"
 # Hybrid GPT: BIOS boot (SeaBIOS/QEMU default) + ESP (UEFI) + root.
-sgdisk -n 1:0:+1M -t 1:ef02 -c 1:bios_grub \
-       -n 2:0:+512M -t 2:ef00 -c 2:EFI \
-       -n 3:0:0 -t 3:8300 -c 3:root \
-       "$DISK" || die "sgdisk partition failed on $DISK"
+# LUKS adds an unencrypted /boot so GRUB does not need cryptodisk.
+# The passphrase is asked once, by the initramfs.
+if [[ "$LUKS" -eq 1 ]]; then
+  command -v cryptsetup >/dev/null || die "cryptsetup missing on this ISO"
+  sgdisk -n 1:0:+1M -t 1:ef02 -c 1:bios_grub \
+         -n 2:0:+512M -t 2:ef00 -c 2:EFI \
+         -n 3:0:+1G -t 3:8300 -c 3:boot \
+         -n 4:0:0 -t 4:8309 -c 4:cryptroot \
+         "$DISK" || die "sgdisk partition failed on $DISK"
+else
+  sgdisk -n 1:0:+1M -t 1:ef02 -c 1:bios_grub \
+         -n 2:0:+512M -t 2:ef00 -c 2:EFI \
+         -n 3:0:0 -t 3:8300 -c 3:root \
+         "$DISK" || die "sgdisk partition failed on $DISK"
+fi
 partprobe "$DISK" || true
 sleep 1
 
@@ -283,14 +340,36 @@ part_n() {
 }
 P_BIOS="$(part_n 1)"
 P_EFI="$(part_n 2)"
-P_ROOT="$(part_n 3)"
+if [[ "$LUKS" -eq 1 ]]; then
+  P_BOOT="$(part_n 3)"
+  P_LUKS="$(part_n 4)"
+else
+  P_ROOT="$(part_n 3)"
+fi
 
 mkfs.fat -F32 -n EFI "$P_EFI" || die "mkfs.fat failed on $P_EFI"
+if [[ "$LUKS" -eq 1 ]]; then
+  mkfs.ext4 -F -L boot "$P_BOOT" || die "mkfs.ext4 failed on $P_BOOT"
+  keyfile="$(mktemp)"
+  chmod 600 "$keyfile"
+  printf '%s' "$LUKS_PASS" >"$keyfile"
+  unset LUKS_PASS
+  cryptsetup luksFormat --type luks2 --batch-mode --key-file "$keyfile" "$P_LUKS" \
+    || die "luksFormat failed on $P_LUKS"
+  cryptsetup open --key-file "$keyfile" "$P_LUKS" sartoria_crypt \
+    || die "cryptsetup open failed on $P_LUKS"
+  shred -u "$keyfile" 2>/dev/null || rm -f "$keyfile"
+  P_ROOT=/dev/mapper/sartoria_crypt
+fi
 mkfs.ext4 -F -L sartoria "$P_ROOT" || die "mkfs.ext4 failed on $P_ROOT"
 
 TARGET=/mnt/sartoria-target
 mkdir -p "$TARGET"
 mount "$P_ROOT" "$TARGET" || die "mount $P_ROOT failed"
+if [[ "$LUKS" -eq 1 ]]; then
+  mkdir -p "$TARGET/boot"
+  mount "$P_BOOT" "$TARGET/boot" || die "mount $P_BOOT failed"
+fi
 
 log "copying payload (this takes a few minutes)"
 unsquashfs -f -d "$TARGET" "$SQUASH" || die "unsquashfs failed"
@@ -305,10 +384,18 @@ rm -f "$TARGET/usr/lib/sartoria/installer-tty"
 
 UUID_ROOT="$(blkid -s UUID -o value "$P_ROOT")"
 UUID_EFI="$(blkid -s UUID -o value "$P_EFI")"
-cat > "$TARGET/etc/fstab" <<EOF
-UUID=${UUID_ROOT} / ext4 errors=remount-ro 0 1
-UUID=${UUID_EFI} /boot/efi vfat umask=0077 0 1
-EOF
+{
+  printf 'UUID=%s / ext4 errors=remount-ro 0 1\n' "$UUID_ROOT"
+  if [[ "$LUKS" -eq 1 ]]; then
+    UUID_BOOT="$(blkid -s UUID -o value "$P_BOOT")"
+    UUID_LUKS="$(blkid -s UUID -o value "$P_LUKS")"
+    printf 'UUID=%s /boot ext4 defaults 0 2\n' "$UUID_BOOT"
+    printf 'sartoria_crypt UUID=%s none luks,discard\n' "$UUID_LUKS" > "$TARGET/etc/crypttab"
+  else
+    rm -f "$TARGET/etc/crypttab"
+  fi
+  printf 'UUID=%s /boot/efi vfat umask=0077 0 1\n' "$UUID_EFI"
+} > "$TARGET/etc/fstab"
 
 echo "$HOSTNAME" > "$TARGET/etc/hostname"
 cat > "$TARGET/etc/hosts" <<EOF
@@ -367,10 +454,13 @@ chroot "$TARGET" /bin/systemd-machine-id-setup >/dev/null 2>&1 || \
   printf '%s\n' "$(head -c 16 /dev/urandom | xxd -p)" > "$TARGET/etc/machine-id"
 
 sync
-for d in sys/firmware/efi/efivars proc sys dev/pts dev run boot/efi; do
+for d in sys/firmware/efi/efivars proc sys dev/pts dev run boot/efi boot; do
   umount -l "$TARGET/$d" 2>/dev/null || true
 done
 umount -l "$TARGET" || true
+if [[ "$LUKS" -eq 1 ]]; then
+  cryptsetup close sartoria_crypt || true
+fi
 
 log "Installation complete"
 printf 'SARTORIA_INSTALL_OK\n'

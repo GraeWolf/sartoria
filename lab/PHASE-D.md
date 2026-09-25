@@ -2,7 +2,7 @@
 
 Recorded 2026-09-19. This is **v0.1**.
 
-The ISO is built **inside** the Devuan `sartoria-c` VM (`scripts/lab-build-iso.sh` → `scripts/build-iso.sh`). Not live-build: debootstrap + `sartoria-desktop` + squashfs + `grub-mkrescue`.
+The 2026-09-19 ISO was built inside the Devuan `sartoria-c` VM. Later ISOs are built on this laptop with the same scripts (`scripts/lab-build-iso.sh` → `scripts/build-iso.sh`). Not live-build: debootstrap + `sartoria-desktop` + squashfs + `grub-mkrescue`. The build chroot is `/var/tmp/sartoria-iso`, not this machine's root disk.
 
 | Check | Result |
 | --- | --- |

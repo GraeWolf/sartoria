@@ -50,7 +50,7 @@ The name is Italian for tailoring: one cut, not a kit.
 | Audience | Personal first; public repo is fine; no community SLA |
 | Daily-driver target | This G15 (hybrid AMD+NVIDIA). VM remains the ISO gate. |
 | v0.1 done | ISO installs into a VM and boots the session |
-| Build isolation | ISO is built inside a Devuan VM/chroot, not on the host |
+| Build isolation | ISO is built on this Devuan laptop in a debootstrap chroot (`scripts/build-iso.sh`). The chroot is not this machine's root disk |
 | Arch/boot (v0.1) | amd64, UEFI, GRUB; BIOS if live-build gives it cheaply |
 | Privileges | One sudo user; root login disabled; sudo asks for the user password |
 | Network/audio | NetworkManager + PipeWire; PulseAudio only if PipeWire has no usable sysvinit scripts |
@@ -200,11 +200,11 @@ Autostart, polybar, rofi, dunst, picom, one theme, `sartoria` CLI stub.
 
 ### Phase D — ISO + TUI installer
 
-Build the ISO **inside** a Devuan Excalibur VM/chroot (`scripts/build-iso.sh`). live-build or Devuan’s current live-sdk — verify before investing.
+Build the ISO on this Devuan laptop with `scripts/lab-build-iso.sh`. That runs `scripts/build-iso.sh`: debootstrap, squashfs, and `grub-mkrescue` in a chroot. Not live-build. The 2026-09-19 image was built in the `sartoria-c` VM. Later images are built here.
 
 Installer-first offline ISO. TUI: user, password, hostname, keyboard, whole-disk wipe. Install to a second VM disk. Installed VM boots without the live medium.
 
-**Exit D:** Install from ISO → working Sartoria VM. This is **v0.1**. Done 2026-09-19; see `lab/PHASE-D.md`. Build is debootstrap + squashfs + grub-mkrescue inside a Devuan VM, not live-build.
+**Exit D:** Install from ISO → working Sartoria VM. This is **v0.1**. Done 2026-09-19; see `lab/PHASE-D.md`.
 
 ### Phase E — Hardware (NVIDIA gate)
 
@@ -232,7 +232,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F5.** Optional `sartoria-games`. After NVIDIA. Not on the v0.1 ISO. Excalibur `steam-installer` (contrib) plus i386 libraries. `sartoria-steam` is Prime offload (`sartoria nvidia steam`). Super+g. Dialog rules match titles, not `class=Steam`.
 
-**F6.** Laptop LUKS profile. Destructive. Prove on a spare disk / second install, **not** voyager’s current root. v0.1 stays unencrypted whole-disk.
+**F6.** Laptop LUKS profile on the installer ISO. An interactive install can encrypt the root with LUKS2. The EFI partition and `/boot` stay unencrypted, and the initramfs asks for the passphrase once. The unattended lab install stays whole-disk ext4. Prove that boot on a spare disk or VM before using the ISO to reinstall voyager. The v0.1 default stays unencrypted.
 
 **F7.** Optional `sartoria-ai`. Last. OS must work with zero AI config.
 
@@ -325,7 +325,7 @@ There is no pytest suite for v1. The test is **boot + session + metapackage repr
 2. **NVIDIA + XLibre** is the hardest integration; it is not a VM milestone. Hybrid Prime on XLibre has a known black-window failure if NVIDIA becomes the session GLX provider — keep Mesa as default.
 3. **Installer-first ISO** must be tested as an installer, not as a live desktop.
 4. **auto-startx on tty1** must not run on SSH or extra VTs.
-5. **live-build on the host will fight you.** Build ISOs in a Devuan VM/chroot.
+5. **Do not use live-build.** `scripts/build-iso.sh` debootstraps a chroot on this Devuan machine.
 6. **Calamares was rejected.** Do not fall back to it if the TUI is hard; finish the TUI.
 7. **Freshness is a pin list**, not a move to Freia/Ceres.
 
