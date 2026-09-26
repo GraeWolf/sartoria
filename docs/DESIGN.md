@@ -40,13 +40,13 @@ The name is Italian for tailoring: one cut, not a kit.
 | Session start | Console login on tty1, then **manual `startx`**. Auto-startx is off so a failed X (hybrid GPU) does not log you out. No display manager |
 | Desktop stack | alacritty, polybar, rofi, dunst, picom |
 | v0.1 apps | Session minimum only (no browser, office, or file manager) |
-| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) + `sartoria-office` (LibreOffice; not on the v0.1 ISO) + `sartoria-daily` (file manager and screenshots; not on the v0.1 ISO) + `sartoria-games` (Steam; not on the v0.1 ISO) |
+| Packaging | apt/dpkg, `sartoria-desktop` + `sartoria-nvidia` (hardware) + `sartoria-origin` (browser; not on the v0.1 ISO) + `sartoria-office` (LibreOffice; not on the v0.1 ISO) + `sartoria-daily` (file manager and screenshots; not on the v0.1 ISO) + `sartoria-games` (Steam; not on the v0.1 ISO) + `sartoria-ai` (one recipe; not on the v0.1 ISO) |
 | Package freshness | Excalibur + `excalibur-backports` + pinned extra repos |
 | NVIDIA | Phase E. Hybrid laptop first (Prime offload). Desktop dGPU later. Not on the v0.1 ISO. |
 | Browser (later) | Brave Origin via `sartoria-origin` (AI stays out of the browser). Not on the v0.1 ISO. |
 | Office (later) | LibreOffice via `sartoria-office` from Excalibur. Not on the v0.1 ISO. |
 | Daily bits (later) | Nautilus and screenshots via `sartoria-daily` from Excalibur. Not on the v0.1 ISO. X11 session; Hyprland packages are pinned off. |
-| AI | None in v0.1. OS must work with zero AI config. Optional slot later |
+| AI | None on the v0.1 ISO. Optional `sartoria-ai` stays off until a key exists. The OS works with zero AI config |
 | Audience | Personal first; public repo is fine; no community SLA |
 | Daily-driver target | This G15 (hybrid AMD+NVIDIA). VM remains the ISO gate. |
 | v0.1 done | ISO installs into a VM and boots the session |
@@ -56,7 +56,7 @@ The name is Italian for tailoring: one cut, not a kit.
 | Network/audio | NetworkManager + PipeWire; PulseAudio only if PipeWire has no usable sysvinit scripts |
 | Shell/editor/font | bash, neovim, JetBrainsMono Nerd Font |
 | Theme | One dark, dense, cool-neutral theme (Tokyo Night-class) |
-| CLI | `sartoria status`, `help`, `version`; Phase E adds `gpu` and `nvidia` |
+| CLI | `sartoria status`, `help`, `version`, `gpu`, `nvidia`. `sartoria ai` is a no-op unless `sartoria-ai` is installed |
 | Installer prompts | Username, password, hostname (default `sartoria`), keyboard, **disk to wipe** (menu; other disks untouched), explicit YES confirm. Locale `en_US.UTF-8`. Timezone UTC |
 | FDE | Skip on v0.1 VM; later for a laptop profile |
 | Gaming | `sartoria-games`: Excalibur Steam, Prime offload, not in the base ISO |
@@ -234,7 +234,7 @@ Hardware session exists (Phase E). This phase is the rest of “willing to daily
 
 **F6.** Laptop LUKS profile on the installer ISO. An interactive install can encrypt the root with LUKS2. The EFI partition and `/boot` stay unencrypted, and the initramfs asks for the passphrase once, in a Tokyo Night Plymouth box. Ext4 installs and the installer ISO pass `nosplash`. The unattended lab install stays whole-disk ext4. Prove that boot on a spare disk or VM before using the ISO to reinstall voyager. The v0.1 default stays unencrypted.
 
-**F7.** Optional `sartoria-ai`. Last. OS must work with zero AI config.
+**F7.** Optional `sartoria-ai`. Last. Not on the v0.1 ISO. `sartoria ai` with the package absent is a no-op. One recipe (session advice, xAI Responses API, `grok-4.7`). Off until `XAI_API_KEY` or `~/.config/sartoria/ai/key` (mode 600). It may read and discuss `~/.config/sartoria` and herbstluftwm autostart. It does not write. It does not touch the bootloader, LUKS, apt sources, the browser, or the installer. `sartoria-desktop` ≥ 0.0.9 only adds the no-op dispatch.
 
 **Exit F:** Willing to daily-drive on this G15.
 
@@ -256,14 +256,13 @@ Write this in the manual and keep it:
 
 ## 7. AI policy
 
-v1 ships no AI packages. `sartoria ai` may exist later as documentation or a no-op.
-
-Later (not v0.1):
+The v0.1 ISO ships no AI package. `sartoria-desktop` ≥ 0.0.9 answers `sartoria ai` with a no-op when `sartoria-ai` is not installed.
 
 - Desktop, network, NVIDIA, and updates work with AI completely absent.
-- At most one default agent recipe, disabled until a key exists.
+- At most one recipe (`sartoria-ai`). It stays off until a key exists.
+- The recipe may read and discuss `~/.config/sartoria` and herbstluftwm autostart. It does not write them.
+- It must not change the bootloader, LUKS, or apt sources. Those stay a manual edit.
 - No AI in the browser (Origin). No AI in the installer.
-- Document what an agent may change (`~/.config/sartoria`, herbstluftwm autostart) vs must never change (bootloader, LUKS, apt sources) without confirmation.
 
 ---
 

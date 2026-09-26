@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+# Optional session recipe. Off until a key exists. Does not write files.
+set -euo pipefail
+
+VERSION="0.0.1"
+MODEL="${SARTORIA_AI_MODEL:-grok-4.7}"
+ENDPOINT="${SARTORIA_AI_ENDPOINT:-https://api.x.ai/v1/responses}"
+TIMEOUT="${SARTORIA_AI_TIMEOUT:-300}"
+POLICY="${SARTORIA_AI_POLICY:-/usr/share/sartoria/ai/policy.txt}"
+RECIPE="${SARTORIA_AI_RECIPE:-/usr/lib/sartoria/sartoria-ai-recipe}"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+usage() {
+  cat <<EOF
+sartoria-ai — optional session recipe
+
+Usage:
+  sartoria ai status
+  sartoria ai policy
+  sartoria ai <prompt>
+
+Off until XAI_API_KEY is set, or ${CONFIG_HOME}/sartoria/ai/key exists
+and is mode 600. With no key, a prompt sends nothing.
+The recipe reads session config and answers. It does not write files.
+EOF
+}
+
+load_key() {
+  local f mode line
+  if [ -n "${XAI_API_KEY:-}" ]; then
+    case "$XAI_API_KEY" in
+      *[[:space:]]*)
+        echo "sartoria-ai: XAI_API_KEY contains whitespace." >&2
+        return 2
+        ;;
+    esac
+    printf '%s' "$XAI_API_KEY"
+    return 0
+  fi
+  f="${CONFIG_HOME}/sartoria/ai/key"
+  [ -f "$f" ] || return 1
+  [ -s "$f" ] || return 1
+  mode="$(stat -c %a "$f" 2>/dev/null || true)"
+  case "$mode" in
+    600|400) ;;
+    *)
+      echo "sartoria-ai: $f is mode ${mode:-unknown}. chmod 600 it. The key was not read." >&2
+      return 2
+      ;;
+  esac
+  line="$(head -n1 "$f" | tr -d '\r')"
+  case "$line" in
+    *[[:space:]]*)
+      echo "sartoria-ai: the key file contains whitespace." >&2
+      return 2
+      ;;
+    "")
+      return 1
+      ;;
+  esac
+  printf '%s' "$line"
+}
+
+key_state() {
+  local rc
+  set +e
+  load_key >/dev/null 2>&1
+  rc=$?
+  set -e
+  case "$rc" in
+    0) printf '%s\n' "key present" ;;
+    2) printf '%s\n' "key file is not mode 600" ;;
+    *) printf '%s\n' "off (no key)" ;;
+  esac
+}
+
+cmd_status() {
+  local line
+  line="$(key_state)"
+  if [ "${1:-}" = "--brief" ]; then
+    printf '%s\n' "$line"
+    return 0
+  fi
+  cat <<EOF
+sartoria-ai $VERSION
+recipe: one (session advice)
+key: $line
+network: off until a prompt is given with a key
+EOF
+}
+
+cmd_policy() {
+  if [ ! -f "$POLICY" ]; then
+    echo "sartoria-ai: policy file missing ($POLICY)." >&2
+    exit 1
+  fi
+  cat "$POLICY"
+}
+
+check_endpoint() {
+  case "$ENDPOINT" in
+    *$'\n'*|*' '*)
+      echo "sartoria-ai: endpoint is not a single https URL." >&2
+      exit 1
+      ;;
+    https://*) ;;
+    http://127.0.0.1:*|http://localhost:*) ;;
+    *)
+      echo "sartoria-ai: endpoint must be https." >&2
+      exit 1
+      ;;
+  esac
+}
+
+cmd_prompt() {
+  local prompt key rc hdr body resp code
+  prompt="${*:-}"
+  if [ -z "$prompt" ]; then
+    if [ -t 0 ]; then
+      usage >&2
+      exit 2
+    fi
+    prompt="$(cat)"
+  fi
+  if [ -z "${prompt//[[:space:]]/}" ]; then
+    usage >&2
+    exit 2
+  fi
+  set +e
+  key="$(load_key)"
+  rc=$?
+  set -e
+  if [ "$rc" -eq 1 ]; then
+    cat <<EOF
+sartoria-ai: no key. The recipe stays off.
+Set XAI_API_KEY, or put one line in ${CONFIG_HOME}/sartoria/ai/key and chmod 600.
+Create a key at https://console.x.ai/team/default/api-keys
+Nothing was sent.
+EOF
+    exit 0
+  fi
+  if [ "$rc" -ne 0 ]; then
+    exit "$rc"
+  fi
+  if [ ! -x "$RECIPE" ]; then
+    echo "sartoria-ai: recipe helper missing ($RECIPE)." >&2
+    exit 1
+  fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "sartoria-ai: python3 is not installed." >&2
+    exit 1
+  fi
+  check_endpoint
+  umask 077
+  hdr="$(mktemp)"
+  body="$(mktemp)"
+  resp="$(mktemp)"
+  trap 'rm -f "$hdr" "$body" "$resp"' EXIT
+  printf '%s' "$prompt" | python3 "$RECIPE" request \
+    --policy "$POLICY" --model "$MODEL" --config-home "$CONFIG_HOME" >"$body"
+  printf 'Authorization: Bearer %s\nContent-Type: application/json\n' "$key" >"$hdr"
+  unset key
+  set +e
+  code="$(curl -sS --max-time "$TIMEOUT" -o "$resp" -w '%{http_code}' \
+    -H @"$hdr" --data-binary @"$body" "$ENDPOINT")"
+  rc=$?
+  set -e
+  rm -f "$hdr"
+  hdr=""
+  if [ "$rc" -ne 0 ]; then
+    echo "sartoria-ai: request failed." >&2
+    exit 1
+  fi
+  if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+    echo "sartoria-ai: API returned HTTP $code." >&2
+    python3 "$RECIPE" text <"$resp" >&2 || true
+    exit 1
+  fi
+  python3 "$RECIPE" text <"$resp"
+  rm -f "$hdr" "$body" "$resp"
+  trap - EXIT
+}
+
+case "${1:-status}" in
+  status)
+    shift || true
+    cmd_status "${1:-}"
+    ;;
+  policy)
+    cmd_policy
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    cmd_prompt "$@"
+    ;;
+esac

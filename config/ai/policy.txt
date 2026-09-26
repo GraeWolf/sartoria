@@ -1,0 +1,24 @@
+Sartoria AI is optional. The desktop, network, NVIDIA driver, and updates
+work with this package absent and with no API key.
+
+There is one recipe. It does not run until a key exists. It answers in the
+terminal. It does not write files, install packages, or run commands.
+
+The recipe may read, and may discuss edits to:
+  ~/.config/sartoria/          (except the key file)
+  ~/.config/herbstluftwm/autostart
+
+You apply those edits yourself.
+
+Outside this recipe, even as something for it to change:
+  the bootloader (GRUB, /boot, /etc/default/grub)
+  LUKS (crypttab, the disk passphrase, the partition layout)
+  apt sources and pins (/etc/apt)
+  the installer
+
+Brave Origin stays free of AI. The installer stays free of AI.
+
+The key is the environment variable XAI_API_KEY, or one line in
+~/.config/sartoria/ai/key with mode 600. The package does not ship a key.
+A prompt is sent only to https://api.x.ai/v1/responses with store set to false.
+The model is grok-4.7 unless SARTORIA_AI_MODEL is set.

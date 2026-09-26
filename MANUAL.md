@@ -154,6 +154,24 @@ sudo apt-get install ./lab/cache/sartoria-desktop_0.0.8_all.deb ./lab/cache/sart
 
 Super+g launches Steam on the NVIDIA GPU. The menu item is “Steam (NVIDIA)”. The upstream “Steam” item leaves the game on the iGPU. The first launch downloads the client. Reload herbstluftwm (Super+Shift+r) if the bind is missing. Existing autostart is not overwritten.
 
+## AI (optional)
+
+Not on the installer ISO. The machine works with this package absent and with no API key. There is no session key for it. Brave Origin and the installer do not call it.
+
+```bash
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-ai.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.9_all.deb ./lab/cache/sartoria-ai_0.0.1_all.deb
+sartoria ai status
+sartoria ai policy
+```
+
+`sartoria-desktop` ≥ 0.0.9 answers `sartoria ai` when the package is missing: AI is optional, and nothing is sent. With the package installed, a prompt still sends nothing until a key exists.
+
+Set `XAI_API_KEY`, or put one line in `~/.config/sartoria/ai/key` and `chmod 600` that file. Create a key at https://console.x.ai/team/default/api-keys . The package does not ship a key. A prompt goes to `https://api.x.ai/v1/responses` (model `grok-4.7`, `store` false). `SARTORIA_AI_MODEL` overrides the model.
+
+The recipe may read, and may discuss edits to, `~/.config/sartoria` (except the key file) and `~/.config/herbstluftwm/autostart`. It does not write them. You apply any edit yourself. The bootloader, LUKS, and apt sources are outside the recipe.
+
 ## Rescue (development only)
 
 XLibre is third-party. If a lab VM will not start X, rolling back to Xorg is allowed **on the lab machine** while debugging. Sartoria still ships XLibre.

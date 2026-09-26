@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+  echo "sartoria-ai: optional. The recipe stays off until a key exists." >&2
+  echo "sartoria-ai: sartoria ai policy" >&2
+  echo "sartoria-ai: not used by the installer or the browser." >&2
+fi
+exit 0

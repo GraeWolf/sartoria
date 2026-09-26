@@ -15,7 +15,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Super+p screenshots a region |
 | F5 | Optional `sartoria-games` (Steam on the dGPU) | installed on voyager (`sartoria-games` 0.0.1, i386, Super+g, Prime offload). "Sign in to Steam" still tiles |
 | F6 | Laptop LUKS on the installer ISO | done 2026-09-25. VM install showed the Tokyo Night box, unlocked, and booted. Unattended `sartoria.auto=1` stayed ext4 with no `crypttab` (root `/dev/vda3`, `quiet nosplash`). Not applied to voyager’s disk |
-| F7 | Optional `sartoria-ai` (last) | not started |
+| F7 | Optional `sartoria-ai` (last) | done 2026-09-25. `sartoria-desktop` 0.0.9 and `sartoria-ai` 0.0.1 installed on voyager. Status is off (no key). A prompt sent nothing. Not on the v0.1 ISO |
 
 Not this gate: desktop dGPU, reverse-PRIME HDMI, `sartoria-nvidia` on the v0.1 ISO. `nvidia-persistenced` stays disabled.
 
@@ -276,9 +276,22 @@ The finish box's OK runs `reboot -f`. A graceful reboot hangs on the live mounts
 
 Exit F6 met 2026-09-25. A VM install showed the passphrase box, accepted the passphrase, and booted the installed system. The unattended install on that ISO had no `crypttab`, root `/dev/vda3`, and `quiet nosplash`. Voyager’s current disk stays unencrypted.
 
-## Later
+## F7 — Optional AI
 
-- **F7.** `sartoria-ai` last and optional.
+`sartoria-ai` 0.0.1. Not on the v0.1 ISO. `sartoria-desktop` 0.0.9 adds `sartoria ai` and nothing else: with the package absent, that command says AI is optional and sends nothing. The ISO build installs `sartoria-desktop` only, so a later image can carry the no-op and still has no AI package.
+
+One recipe. It stays off until `XAI_API_KEY` is set, or `~/.config/sartoria/ai/key` exists and is mode 600. A prompt is one Responses API call (`https://api.x.ai/v1/responses`, model `grok-4.7`, `store: false`). The key is a header, not part of the JSON body. The helper refuses a key file that is not mode 600 or 400 and does not send it.
+
+The recipe may read `~/.config/sartoria` (not the key file) and `~/.config/herbstluftwm/autostart`, and it may discuss edits there. It does not write. A symlink that leaves those directories is skipped. The bootloader, LUKS, apt sources, and the installer are outside the recipe. Brave Origin is unchanged. There is no herbstluftwm bind.
+
+```bash
+./scripts/build-sartoria-desktop.sh
+./scripts/build-sartoria-ai.sh
+sudo apt-get install ./lab/cache/sartoria-desktop_0.0.9_all.deb ./lab/cache/sartoria-ai_0.0.1_all.deb
+sartoria ai status    # off (no key), and no network
+```
+
+Exit F7 met 2026-09-25 on voyager. `sartoria-desktop` 0.0.9 and `sartoria-ai` 0.0.1 are installed. `sartoria ai status` reports `off (no key)` and network off. A prompt with no key printed `Nothing was sent` and did not run curl. The ISO package list does not include `sartoria-ai`. `sartoria-desktop` 0.0.9 still answers `sartoria ai` with a no-op when the package is absent.
 
 ## Exit
 

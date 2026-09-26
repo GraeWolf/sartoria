@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""One Sartoria recipe: build a Responses request, or print assistant text.
+
+request  reads the prompt on stdin and writes the JSON body to stdout.
+text     reads a response body on stdin and writes the assistant text.
+"""
+
+import argparse
+import json
+import os
+import sys
+
+MAX_FILE = 32 * 1024
+MAX_TOTAL = 64 * 1024
+
+MODEL_NOTE = (
+    "You are Sartoria's one recipe. You advise on the session.\n"
+    "You do not apply changes. This program does not write files, "
+    "install packages, or run commands you suggest.\n"
+    "You may discuss edits to ~/.config/sartoria and "
+    "~/.config/herbstluftwm/autostart. The user applies those.\n"
+    "The bootloader, LUKS, apt sources, and the installer are outside "
+    "this recipe. If asked to change them, say they are outside the "
+    "recipe and stop at that.\n"
+    "Do not claim you changed the machine."
+)
+
+
+def die(msg):
+    sys.stderr.write("sartoria-ai: %s\n" % msg)
+    sys.exit(1)
+
+
+def config_home(path):
+    try:
+        real = os.path.realpath(path)
+    except OSError as exc:
+        die("config home: %s" % exc)
+    if real in ("/", "/etc", "/boot", "/usr", "/var", "/root"):
+        die("config home is not a user config directory")
+    forbidden = ("/etc", "/boot", "/usr", "/bin", "/sbin", "/sys", "/proc", "/dev", "/run")
+    home = os.path.realpath(os.environ.get("HOME") or "")
+    under_home = bool(home) and home not in ("/", real) and (
+        real == home or real.startswith(home + os.sep)
+    )
+    if not under_home:
+        for prefix in forbidden:
+            if real == prefix or real.startswith(prefix + os.sep):
+                die("config home is outside the user session")
+    return real
+
+
+def under(path, root):
+    path = os.path.realpath(path)
+    root = os.path.realpath(root)
+    return path == root or path.startswith(root + os.sep)
+
+
+def read_text(path):
+    try:
+        with open(path, "rb") as fh:
+            data = fh.read(MAX_FILE + 1)
+    except OSError:
+        return None
+    clipped = len(data) > MAX_FILE
+    if clipped:
+        data = data[:MAX_FILE]
+    if b"\x00" in data:
+        return None
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if clipped:
+        text += "\n…(truncated)\n"
+    return text
+
+
+def session_context(home):
+    """Return (body, skipped labels). Never include the key file."""
+    chunks = []
+    skipped = []
+    used = 0
+    sartoria = os.path.join(home, "sartoria")
+    key_path = os.path.realpath(os.path.join(sartoria, "ai", "key"))
+    autostart = os.path.join(home, "herbstluftwm", "autostart")
+    herbst_root = os.path.join(home, "herbstluftwm")
+
+    def is_key_file(path):
+        if os.path.basename(path) == "key" or os.path.realpath(path) == key_path:
+            return True
+        if not os.path.exists(key_path):
+            return False
+        try:
+            got = os.stat(path)
+            key_stat = os.stat(key_path)
+        except OSError:
+            return False
+        return got.st_ino == key_stat.st_ino and got.st_dev == key_stat.st_dev
+
+    def take(path, label, allow):
+        nonlocal used
+        try:
+            real = os.path.realpath(path)
+        except OSError:
+            skipped.append(label)
+            return
+        if is_key_file(real) or not allow(real):
+            skipped.append(label)
+            return
+        if not os.path.isfile(real):
+            return
+        if used >= MAX_TOTAL:
+            skipped.append(label)
+            return
+        text = read_text(real)
+        if text is None:
+            skipped.append(label)
+            return
+        room = MAX_TOTAL - used
+        if len(text.encode("utf-8")) > room:
+            text = text.encode("utf-8")[:room].decode("utf-8", "ignore") + "\n…(truncated)\n"
+        used += len(text.encode("utf-8"))
+        chunks.append("## %s\n%s" % (label, text.rstrip("\n")))
+
+    def allow_autostart(real):
+        # Config root too: a herbstluftwm symlink to /etc realpaths under /etc.
+        return under(real, home) and under(real, herbst_root)
+
+    def allow_sartoria(real):
+        return under(real, home) and under(real, sartoria)
+
+    if os.path.lexists(autostart):
+        take(autostart, "~/.config/herbstluftwm/autostart", allow_autostart)
+
+    if os.path.isdir(sartoria) and not os.path.islink(sartoria):
+        found = []
+        for dirpath, dirnames, filenames in os.walk(sartoria, followlinks=False):
+            dirnames[:] = [d for d in dirnames if d != "key" and not os.path.islink(os.path.join(dirpath, d))]
+            for name in filenames:
+                if name == "key":
+                    continue
+                found.append(os.path.join(dirpath, name))
+        for path in sorted(found):
+            rel = os.path.relpath(path, home)
+            take(path, "~/.config/" + rel, allow_sartoria)
+
+    return chunks, skipped
+
+
+def build_request(prompt, policy_path, model, home):
+    try:
+        with open(policy_path, "r", encoding="utf-8") as fh:
+            policy = fh.read().strip()
+    except OSError as exc:
+        die("policy: %s" % exc)
+    home = config_home(home)
+    chunks, skipped = session_context(home)
+    if chunks:
+        shown = "Session files the recipe may read:\n\n" + "\n\n".join(chunks)
+    else:
+        shown = "Session files the recipe may read: none present."
+    if skipped:
+        shown += "\n\nSkipped (not in the allow list): " + ", ".join(skipped)
+    user = shown + "\n\nQuestion:\n" + prompt
+    body = {
+        "model": model,
+        "store": False,
+        "input": [
+            {"role": "system", "content": policy + "\n\n" + MODEL_NOTE},
+            {"role": "user", "content": user},
+        ],
+    }
+    return body
+
+
+def assistant_text(obj):
+    if not isinstance(obj, dict):
+        die("response was not a JSON object")
+    err = obj.get("error")
+    if isinstance(err, dict) and err.get("message"):
+        die(str(err["message"])[:2000])
+    if isinstance(err, str) and err:
+        die(err[:2000])
+    direct = obj.get("output_text")
+    if isinstance(direct, str) and direct.strip():
+        return direct
+    parts = []
+    for item in obj.get("output") or []:
+        if not isinstance(item, dict) or item.get("type") not in (None, "message"):
+            continue
+        content = item.get("content")
+        if isinstance(content, str) and content:
+            parts.append(content)
+        elif isinstance(content, list):
+            for piece in content:
+                if not isinstance(piece, dict):
+                    continue
+                if piece.get("type") in ("output_text", "text") and piece.get("text"):
+                    parts.append(piece["text"])
+    text = "\n".join(parts).strip()
+    if not text:
+        die("empty reply")
+    return text
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(prog="sartoria-ai-recipe")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    req = sub.add_parser("request")
+    req.add_argument("--policy", required=True)
+    req.add_argument("--model", required=True)
+    req.add_argument("--config-home", required=True)
+
+    sub.add_parser("text")
+    args = parser.parse_args(argv)
+    if args.cmd == "request":
+        prompt = sys.stdin.read()
+        if not prompt.strip():
+            die("empty prompt")
+        body = build_request(prompt, args.policy, args.model, args.config_home)
+        json.dump(body, sys.stdout)
+        sys.stdout.write("\n")
+        return 0
+    raw = sys.stdin.read()
+    try:
+        obj = json.loads(raw)
+    except json.JSONDecodeError:
+        die("response was not JSON")
+    text = assistant_text(obj)
+    sys.stdout.write(text)
+    if not text.endswith("\n"):
+        sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

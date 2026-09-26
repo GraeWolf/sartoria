@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Sartoria CLI. Phase E: status, help, version, gpu, nvidia.
+# Sartoria CLI. status, help, version, gpu, nvidia. ai is a no-op unless
+# sartoria-ai is installed.
 set -euo pipefail
 VERSION="0.0.2"
 
@@ -11,6 +12,7 @@ Usage:
   sartoria status
   sartoria gpu
   sartoria nvidia [--] command [args...]
+  sartoria ai [status|policy|prompt]
   sartoria version
   sartoria help
 EOF
@@ -39,7 +41,7 @@ gl_renderer() {
 }
 
 cmd_status() {
-  local comm init disp session nvidia extras xver renderer
+  local comm init disp session nvidia extras xver renderer ai
   comm="$(cat /proc/1/comm 2>/dev/null || echo unknown)"
   init="$(readlink -f /sbin/init 2>/dev/null || echo unknown)"
   disp="none"
@@ -71,6 +73,11 @@ cmd_status() {
     fi
   done
   renderer="$(gl_renderer || true)"
+  if [ -x /usr/bin/sartoria-ai ]; then
+    ai="$(/usr/bin/sartoria-ai status --brief 2>/dev/null || echo installed)"
+  else
+    ai="absent"
+  fi
   cat <<EOF
 sartoria $VERSION
 init:     $comm ($init)
@@ -79,6 +86,7 @@ session:  $session
 helpers: ${extras# }
 nvidia:   $nvidia
 gl:       ${renderer:-unknown}
+ai:       $ai
 EOF
 }
 
@@ -142,12 +150,33 @@ cmd_nvidia() {
   exit 1
 }
 
+cmd_ai() {
+  if [ -x /usr/bin/sartoria-ai ]; then
+    exec /usr/bin/sartoria-ai "$@"
+  fi
+  cat <<'EOF'
+sartoria: AI is optional and not installed.
+The desktop works with zero AI config. Nothing was sent.
+
+  sartoria ai status
+  sartoria ai policy
+  sartoria ai <prompt>
+
+The recipe is sartoria-ai. It is not on the v0.1 ISO.
+It stays off until a key exists.
+EOF
+}
+
 case "${1:-help}" in
   status) cmd_status ;;
   gpu) cmd_gpu ;;
   nvidia)
     shift
     cmd_nvidia "$@"
+    ;;
+  ai)
+    shift
+    cmd_ai "$@"
     ;;
   version|--version|-V) cmd_version ;;
   help|--help|-h|"") cmd_help ;;
