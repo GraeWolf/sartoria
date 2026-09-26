@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.9}"
+VERSION="${SARTORIA_DESKTOP_VERSION:-0.0.10}"
 PKG=sartoria-desktop
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"
@@ -28,6 +28,8 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/usr/bin" \
   "$STAGE/usr/lib/sartoria" \
+  "$STAGE/usr/libexec/sartoria" \
+  "$STAGE/usr/libexec/system-sleep" \
   "$STAGE/usr/share/sartoria/config" \
   "$STAGE/usr/share/sartoria/skel/.config" \
   "$STAGE/usr/share/doc/$PKG" \
@@ -36,7 +38,10 @@ mkdir -p "$STAGE/DEBIAN" \
   "$STAGE/etc/fonts/conf.d" \
   "$STAGE/etc/apt/sources.list.d" \
   "$STAGE/etc/apt/preferences.d" \
+  "$STAGE/etc/pam.d" \
+  "$STAGE/etc/sartoria" \
   "$STAGE/etc/skel/.config" \
+  "$STAGE/etc/sudoers.d" \
   "$STAGE/etc/X11/xorg.conf.d" \
   "$STAGE/etc/modprobe.d" \
   "$STAGE/etc/udev/rules.d"
@@ -60,11 +65,23 @@ install -m 0755 "$ROOT/config/sartoria-cli/sartoria-session" "$STAGE/usr/bin/sar
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-brightness" "$STAGE/usr/bin/sartoria-brightness"
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-keys" "$STAGE/usr/bin/sartoria-keys"
 install -m 0755 "$ROOT/config/sartoria-cli/sartoria-dpi" "$STAGE/usr/bin/sartoria-dpi"
+install -m 0755 "$ROOT/config/sartoria-cli/sartoria-lock" "$STAGE/usr/bin/sartoria-lock"
+install -m 0755 "$ROOT/config/sartoria-cli/sartoria-lockd" "$STAGE/usr/bin/sartoria-lockd"
+install -m 0755 "$ROOT/config/sartoria-cli/sartoria-lock-priv" \
+  "$STAGE/usr/libexec/sartoria/sartoria-lock-priv"
+install -m 0755 "$ROOT/config/elogind/system-sleep/sartoria-lock" \
+  "$STAGE/usr/libexec/system-sleep/sartoria-lock"
 install -m 0755 "$ROOT/metapackages/sartoria-desktop/seed-user-config" \
   "$STAGE/usr/lib/sartoria/seed-user-config"
 
 install -m 0644 "$ROOT/config/x11/xorg.conf.d/10-igpu.conf" \
   "$STAGE/etc/X11/xorg.conf.d/10-igpu.conf"
+install -m 0644 "$ROOT/config/x11/xorg.conf.d/30-dontzap.conf" \
+  "$STAGE/etc/X11/xorg.conf.d/30-dontzap.conf"
+install -m 0644 "$ROOT/config/pam.d/physlock" "$STAGE/etc/pam.d/physlock"
+install -m 0644 "$ROOT/config/sartoria/lock.conf" "$STAGE/etc/sartoria/lock.conf"
+install -m 0440 "$ROOT/config/sudoers.d/sartoria-lock" \
+  "$STAGE/etc/sudoers.d/sartoria-lock"
 install -m 0644 "$ROOT/config/modprobe.d/sartoria-hybrid.conf" \
   "$STAGE/etc/modprobe.d/sartoria-hybrid.conf"
 install -m 0644 "$ROOT/config/udev/rules.d/80-sartoria-mm-ignore.rules" \
@@ -126,15 +143,21 @@ Priority: optional
 Architecture: all
 Maintainer: Kelly McCuddy <graewolf@use.startmail.com>
 Installed-Size: $installed_kb
-Depends: herbstluftwm, xinit, alacritty, polybar, rofi, gum, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, firmware-iwlwifi, firmware-realtek, firmware-mediatek, firmware-misc-nonfree, firmware-atheros, firmware-brcm80211, wpasupplicant, wireless-regdb, iw, rfkill, elogind, libpam-elogind, rsyslog
+Depends: herbstluftwm, xinit, alacritty, polybar, rofi, gum, dunst, picom, neovim, fonts-jetbrains-mono, gnome-themes-extra, dbus-x11, pipewire, pipewire-pulse, wireplumber, network-manager, libnotify-bin, xdg-utils, xclip, x11-xserver-utils, sudo, ca-certificates, curl, gnupg, firmware-amd-graphics, firmware-iwlwifi, firmware-realtek, firmware-mediatek, firmware-misc-nonfree, firmware-atheros, firmware-brcm80211, wpasupplicant, wireless-regdb, iw, rfkill, elogind, libpam-elogind, rsyslog, physlock, xprintidle
 Recommends: xlibre, xlibre-archive-keyring
 Homepage: https://github.com/kmccuddy/sartoria
 Description: Sartoria desktop metapackage
  Keyboard-first herbstluftwm session for Sartoria (Devuan remix).
  On a panel at or above 140 DPI, sartoria-dpi sets Xft.dpi to 144
  at session start. Displays near 96 DPI, including the VM, stay at 96.
+ The console lock (physlock) covers every virtual terminal.
 EOF
 install -m 0755 "$ROOT/metapackages/sartoria-desktop/postinst" "$STAGE/DEBIAN/postinst"
+
+# umask 002 would ship group-writable directories. sudo ignores
+# /etc/sudoers.d if that directory is group-writable, and a group-writable
+# /usr/libexec/sartoria could replace the root lock helper.
+find "$STAGE" -type d -exec chmod 0755 {} +
 
 mkdir -p "$OUTDIR"
 if command -v dpkg-deb >/dev/null 2>&1; then

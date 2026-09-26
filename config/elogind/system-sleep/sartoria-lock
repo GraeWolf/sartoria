@@ -1,0 +1,14 @@
+#!/bin/sh
+# elogind sleep hook. Lock the consoles before suspend so resume does
+# not show the session. Do not chvt to a high VT and do not write
+# /proc/driver/nvidia/suspend (that combination hung this G15).
+# $1 = pre|post  $2 = suspend|hibernate|...
+[ "${1:-}" = pre ] || exit 0
+
+priv=/usr/libexec/sartoria/sartoria-lock-priv
+[ -x "$priv" ] || exit 0
+[ -x /usr/bin/physlock ] || exit 0
+
+# detach returns once the VT switch is locked, then suspend proceeds.
+"$priv" detach || true
+exit 0

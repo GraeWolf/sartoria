@@ -1,0 +1,39 @@
+#!/bin/sh
+# Root-only console lock. Arguments are fixed so a caller cannot pass
+# physlock -L (that re-enables Ctrl+Alt+Fn with no password).
+# Usage: sartoria-lock-priv [detach]
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+  echo "sartoria-lock-priv: must be root" >&2
+  exit 1
+fi
+
+if [ ! -x /usr/bin/physlock ]; then
+  echo "sartoria-lock-priv: physlock is not installed" >&2
+  exit 1
+fi
+
+mkdir -p -m 0755 /run/sartoria
+chmod 0755 /run/sartoria
+
+# Held across exec. physlock -d's child inherits it, so a second lock
+# waits instead of unlocking the VT switch to grab its own console.
+exec 9>/run/sartoria/lock
+if ! flock -n 9; then
+  flock 9
+  exit 0
+fi
+
+case "${1:-}" in
+  "")
+    exec /usr/bin/physlock -m -s -p "Sartoria locked"
+    ;;
+  detach)
+    exec /usr/bin/physlock -d -m -s -p "Sartoria locked"
+    ;;
+  *)
+    echo "sartoria-lock-priv: rejected" >&2
+    exit 2
+    ;;
+esac

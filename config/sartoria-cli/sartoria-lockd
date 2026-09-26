@@ -1,0 +1,133 @@
+#!/bin/sh
+# Idle console lock. herbstluftwm autostart launches this.
+# Password keystrokes go to physlock's VT, so the X idle counter stays
+# high across an unlock. That stale reading must not lock again immediately.
+set -u
+
+minutes_of() {
+  m=5
+  for f in /etc/sartoria/lock.conf "${XDG_CONFIG_HOME:-$HOME/.config}/sartoria/lock.conf"; do
+    [ -f "$f" ] || continue
+    v=$(sed -n 's/^[[:space:]]*minutes[[:space:]]*=[[:space:]]*\([0-9][0-9]*\)[[:space:]]*$/\1/p' "$f" | tail -n 1)
+    [ -n "$v" ] && m=$v
+  done
+  if [ -n "${SARTORIA_LOCK_MINUTES:-}" ]; then
+    case $SARTORIA_LOCK_MINUTES in
+      *[!0-9]*) ;;
+      *) m=$SARTORIA_LOCK_MINUTES ;;
+    esac
+  fi
+  printf '%s\n' "$m"
+}
+
+idle_ms() {
+  v=$(xprintidle 2>/dev/null || true)
+  case $v in
+    ""|*[!0-9]*) return 1 ;;
+  esac
+  printf '%s\n' "$v"
+}
+
+# sartoria-lock sets the X socket to 000 and restores it on the way out.
+# If that process is killed, new clients stay blocked. X creates the
+# socket mode 777; put that back only when nothing is locked.
+reopen_x_socket() {
+  d=${DISPLAY:-}
+  d=${d#:}
+  d=${d%%.*}
+  case $d in
+    ""|*[!0-9]*) return 0 ;;
+  esac
+  s=/tmp/.X11-unix/X$d
+  [ -S "$s" ] || return 0
+  mode=$(stat -c %a "$s" 2>/dev/null || true)
+  case $mode in
+    0|000) chmod 777 "$s" 2>/dev/null || true ;;
+  esac
+}
+
+if ! command -v xprintidle >/dev/null 2>&1; then
+  echo "sartoria-lockd: xprintidle is not installed" >&2
+  exit 1
+fi
+if ! command -v sartoria-lock >/dev/null 2>&1; then
+  echo "sartoria-lockd: sartoria-lock is not installed" >&2
+  exit 1
+fi
+
+stale=0
+base=0
+saw_lock=0
+
+while true; do
+  m=$(minutes_of)
+  case $m in
+    ""|*[!0-9]*) m=5 ;;
+  esac
+
+  if pgrep -x physlock >/dev/null 2>&1; then
+    saw_lock=1
+    sleep 2
+    continue
+  fi
+  reopen_x_socket
+
+  # Lid-close and a manual lock start physlock without this loop.
+  # Once that process exits, arm a fresh idle period. A failed read
+  # must not use base 0, or the stale X counter locks again at once.
+  if [ "$saw_lock" -eq 1 ]; then
+    base=$(idle_ms || true)
+    if [ -z "$base" ]; then
+      sleep 5
+      continue
+    fi
+    saw_lock=0
+    stale=1
+  fi
+
+  if [ "$m" -eq 0 ]; then
+    stale=0
+    sleep 15
+    continue
+  fi
+
+  idle=$(idle_ms || true)
+  if [ -z "$idle" ]; then
+    sleep 5
+    continue
+  fi
+  limit=$((m * 60 * 1000))
+
+  if [ "$stale" -eq 1 ]; then
+    if [ "$idle" -lt "$base" ]; then
+      stale=0
+    elif [ $((idle - base)) -ge "$limit" ]; then
+      if sartoria-lock; then
+        base=$(idle_ms || true)
+        if [ -z "$base" ]; then
+          saw_lock=1
+        fi
+      else
+        sleep 30
+      fi
+    else
+      sleep 5
+    fi
+    continue
+  fi
+
+  if [ "$idle" -ge "$limit" ]; then
+    if sartoria-lock; then
+      base=$(idle_ms || true)
+      if [ -n "$base" ]; then
+        stale=1
+      else
+        saw_lock=1
+      fi
+    else
+      sleep 30
+    fi
+  else
+    sleep 5
+  fi
+done

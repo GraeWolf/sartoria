@@ -46,6 +46,8 @@ Depends: herbstluftwm,
          elogind,
          libpam-elogind,
          rsyslog,
+         physlock,
+         xprintidle,
          ${misc:Depends}
 Recommends: xlibre, xlibre-archive-keyring
 Description: Sartoria desktop metapackage

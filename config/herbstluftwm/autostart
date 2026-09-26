@@ -107,6 +107,11 @@ if command -v sartoria-shot >/dev/null 2>&1; then
   bind Shift-p spawn sartoria-shot full
 fi
 
+# Locks every TTY. Ctrl+Alt+Fn does nothing until the login password.
+if command -v sartoria-lock >/dev/null 2>&1; then
+  bind Shift-Escape spawn sartoria-lock
+fi
+
 hc rule focus=on
 hc rule windowtype~'_NET_WM_WINDOW_TYPE_(DIALOG|UTILITY|SPLASH)' floating=on
 hc rule windowtype='_NET_WM_WINDOW_TYPE_DIALOG' focus=on
@@ -154,6 +159,10 @@ fi
 if command -v dunst >/dev/null 2>&1; then
   pkill -u "$USER" -x dunst >/dev/null 2>&1 || true
   dunst >/dev/null 2>&1 &
+fi
+if command -v sartoria-lockd >/dev/null 2>&1; then
+  pkill -u "$USER" -x sartoria-lockd >/dev/null 2>&1 || true
+  sartoria-lockd >/dev/null 2>&1 &
 fi
 
 # First login (empty tag): open a terminal so a Super-stealing host still

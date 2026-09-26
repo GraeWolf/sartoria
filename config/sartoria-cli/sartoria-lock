@@ -1,0 +1,63 @@
+#!/bin/sh
+# Lock every virtual console until the login password is entered.
+# Ctrl+Alt+Fn does nothing while physlock is running, and SysRq is off
+# so SysRq+k cannot kill X back to the shell under startx.
+set -eu
+
+priv=/usr/libexec/sartoria/sartoria-lock-priv
+
+x_socket() {
+  d=${DISPLAY:-}
+  d=${d#:}
+  d=${d%%.*}
+  case $d in
+    ""|*[!0-9]*) return 1 ;;
+  esac
+  s=/tmp/.X11-unix/X$d
+  [ -S "$s" ] || return 1
+  printf '%s\n' "$s"
+}
+
+if [ ! -x "$priv" ]; then
+  echo "sartoria-lock: $priv is missing" >&2
+  exit 1
+fi
+
+if [ "$(id -u)" -ne 0 ]; then
+  if ! command -v sudo >/dev/null 2>&1; then
+    echo "sartoria-lock: sudo is missing" >&2
+    exit 1
+  fi
+  # Fail before touching the X socket. sudo would otherwise prompt,
+  # or -n would fail after the socket was already mode 000.
+  if ! sudo -n -l "$priv" >/dev/null 2>&1; then
+    echo "sartoria-lock: $priv is not allowed in sudoers" >&2
+    exit 1
+  fi
+fi
+
+SOCK=
+MODE=
+restore_socket() {
+  if [ -n "${SOCK}" ] && [ -n "${MODE}" ] && [ -S "$SOCK" ]; then
+    chmod "$MODE" "$SOCK" 2>/dev/null || true
+  fi
+}
+trap restore_socket EXIT
+
+if SOCK=$(x_socket 2>/dev/null); then
+  MODE=$(stat -c %a "$SOCK" 2>/dev/null || true)
+  # New X clients cannot attach while the console is locked.
+  # Connections that already exist stay open.
+  if [ -n "$MODE" ]; then
+    chmod 000 "$SOCK" 2>/dev/null || true
+  fi
+fi
+
+# -n: fail instead of prompting. The password is asked by physlock,
+# on the locked console, not by sudo.
+if [ "$(id -u)" -eq 0 ]; then
+  "$priv"
+else
+  sudo -n "$priv"
+fi

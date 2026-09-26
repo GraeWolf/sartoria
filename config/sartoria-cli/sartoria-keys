@@ -50,11 +50,13 @@ describe_binds() {
       if (cmd ~ /wpctl set-mute/ && cmd ~ /SOURCE/) return "Mute microphone"
       if (cmd ~ /sartoria-brightness/ && cmd ~ / up$/) return "Increase brightness"
       if (cmd ~ /sartoria-brightness/ && cmd ~ / down$/) return "Decrease brightness"
+      if (cmd ~ /(^| )sartoria-lock$/) return "Lock the screen"
       return ""
     }
 
     function rank_of(cmd) {
       if (cmd ~ /sartoria-keys/) return 10
+      if (cmd ~ /sartoria-lock$/) return 15
       if (cmd == "spawn alacritty") return 20
       if (cmd ~ /^spawn rofi /) return 21
       if (cmd ~ /sartoria-browser/) return 22
@@ -88,6 +90,7 @@ describe_binds() {
 
     function pretty_key(token) {
       if (token == "space") return "Space"
+      if (token == "Escape") return "Esc"
       if (token == "XF86AudioRaiseVolume") return "Volume up"
       if (token == "XF86AudioLowerVolume") return "Volume down"
       if (token == "XF86AudioMute") return "Mute"

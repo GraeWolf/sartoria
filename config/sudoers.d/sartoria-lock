@@ -1,0 +1,7 @@
+# Console lock runs as root (VT switch, SysRq). No sudo password:
+# physlock asks for the login password on the locked console.
+# physlock -L is not listed. That flag turns Ctrl+Alt+Fn back on
+# with no authentication.
+Defaults!/usr/libexec/sartoria/sartoria-lock-priv !lecture
+ALL ALL=(root) NOPASSWD: /usr/libexec/sartoria/sartoria-lock-priv
+ALL ALL=(root) NOPASSWD: /usr/libexec/sartoria/sartoria-lock-priv detach

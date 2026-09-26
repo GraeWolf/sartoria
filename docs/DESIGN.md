@@ -117,7 +117,8 @@ The USB is not a daily-driver live session. The desktop exists after the target 
 - No LightDM/GDM/SDDM.
 - After a **local tty1** login you get a shell. Run `startx` for herbstluftwm. `.bash_profile` does **not** exec startx (a failed X session would replace the login shell and dump you back at getty).
 - SSH and other ttys must not start X.
-- `.xinitrc` launches herbstluftwm (and the autostart that starts polybar, picom, dunst).
+- `.xinitrc` launches herbstluftwm (and the autostart that starts polybar, picom, dunst, and the idle lock).
+- Console lock is `physlock`, not an X-only locker. It switches to its own VT, turns off Ctrl+Alt+Fn, and disables SysRq until the login password is entered. Super+Shift+Esc locks now. Idle default is 5 minutes (`/etc/sartoria/lock.conf`, override `~/.config/sartoria/lock.conf` or `SARTORIA_LOCK_MINUTES`; `minutes=0` disables only the timer). Lid close locks before elogind suspend. Debian's physlock is setuid; `sartoria-desktop` clears that bit so `physlock -L` cannot re-enable VT switching with no password. `sartoria-lock` is the only passwordless root path, and it cannot pass `-L`.
 
 ### herbstluftwm
 
@@ -139,6 +140,7 @@ Default bindings (v1):
 | Super+o / Super+u | split right / split down |
 | Super+s | toggle floating (dialogs) |
 | Super+Shift+e | exit session |
+| Super+Shift+Esc | lock every virtual console (`sartoria-lock`) |
 
 LibreOffice dialogs float via gtk3 VCL and the generic DIALOG/UTILITY/SPLASH rule. Do not add `class=Soffice` or `class=libreoffice`: the document first-maps with those classes and stays floating. Steam dialogs share that class with the library, so `sartoria-games` floats by title (Friends, settings, chat, properties, progress) and does not use `class=Steam`.
 

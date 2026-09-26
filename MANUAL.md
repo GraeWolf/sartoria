@@ -45,6 +45,33 @@ Wi‑Fi: `sudo nmtui` (needs `wpasupplicant`). If the radio is blocked: `sudo rf
 
 SSH sessions and other VTs do not start X.
 
+## Lock
+
+Super+Shift+Esc (Alt+Shift+Esc too) locks the machine. After 5 minutes with no keyboard or pointer input it locks on its own. Closing the lid locks before suspend, so resume is the lock prompt.
+
+This is `physlock` on its own console, not a window on top of herbstluftwm. While it is running:
+
+- Ctrl+Alt+Fn does nothing, including a TTY you already logged into.
+- SysRq is off, so SysRq+k cannot kill X back to the shell under `startx`.
+- The X socket rejects new clients. Programs that were already connected stay connected.
+- The password is the login password. After three failures it asks for the root password once, then the user password again.
+
+Ctrl+Alt+Backspace is disabled in X as well (`/etc/X11/xorg.conf.d/30-dontzap.conf`). That file is read on the next `startx`.
+
+Change the idle time in `/etc/sartoria/lock.conf` or `~/.config/sartoria/lock.conf`:
+
+```
+minutes=10
+```
+
+`minutes=0` turns the timer off. The key and the lid still lock. `SARTORIA_LOCK_MINUTES` overrides both files.
+
+Debian installs `physlock` setuid root. `sartoria-desktop` turns that bit off: `physlock -L` would otherwise turn Ctrl+Alt+Fn back on with no password. Locking goes through `sartoria-lock`, which is allowed to run only the lock itself. From a shell where you can already `sudo`, a stuck switch (physlock killed mid-prompt) is cleared with `sudo physlock -L`. If SysRq stays dead after that, `sudo sysctl kernel.sysrq=438`.
+
+An SSH session that was already open can still run commands as you. It cannot switch the keyboard back to the desktop without your sudo password.
+
+Reload herbstluftwm (Super+Shift+r) after installing `sartoria-desktop` 0.0.10 so the bind and the idle watcher start. Try a manual lock before trusting the lid: the switch is a normal VT change, not the `chvt 63` path that hung this machine with NVIDIA suspend.
+
 ## Init
 
 ```bash

@@ -1,0 +1,3 @@
+# Sartoria console lock. Same password as tty login.
+@include common-auth
+@include common-account
