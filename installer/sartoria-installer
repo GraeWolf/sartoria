@@ -481,6 +481,17 @@ if [[ "$AUTO" -eq 1 ]]; then
   poweroff -f
 fi
 if [[ "$AUTO" -eq 0 ]]; then
-  dialog --title "Sartoria" --msgbox "Install finished. Remove the USB/ISO and reboot." 8 50 || true
+  # Do not tell them to detach the ISO before OK. The live system is still
+  # reading that medium, and removing it faults the TUI. reboot -f is the
+  # same family as the unattended poweroff -f: a graceful reboot hangs on
+  # the live mounts and falls through to the live getty.
+  drain_tty
+  stty sane <"$UI_TTY" 2>/dev/null || true
+  dialog --title "Sartoria" \
+    --msgbox "Install finished. Press OK to reboot.\n\nRemove the USB or ISO only if this installer appears again." \
+    10 70 >"$UI_TTY" || true
+  log "rebooting into the installed system"
+  sync
+  reboot -f || true
 fi
 exit 0

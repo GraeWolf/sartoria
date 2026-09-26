@@ -21,8 +21,18 @@ if grep -qw sartoria.auto /proc/cmdline 2>/dev/null || [ -f /sartoria-auto ]; th
   exec /sbin/getty 38400 tty1
 fi
 
-# Run the TUI on the fds init gave us (tty1). Always end at getty.
-/usr/sbin/sartoria-installer <>/dev/tty1 >&0 2>&1 || true
+# Run the TUI on the fds init gave us (tty1).
+# Exit 0 means the disk install finished. Reboot into it. A stop or
+# failure ends at getty so inittab respawn does not restart the TUI.
+/usr/sbin/sartoria-installer <>/dev/tty1 >&0 2>&1
+rc=$?
+if [ "$rc" -eq 0 ]; then
+  reboot -f
+  sleep 30
+  printf '\nInstall finished, but reboot failed. This login is still the live ISO.\nReboot the machine. The installed system is on the disk.\n' >/dev/tty1
+  sleep 5
+  exec /sbin/getty 38400 tty1
+fi
 printf '\nInstaller stopped. This login is the LIVE ISO (hostname sartoria-live),\nnot an installed system. Reboot the ISO to try again.\n' >/dev/tty1
 sleep 5
 exec /sbin/getty 38400 tty1

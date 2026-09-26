@@ -14,7 +14,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
 | F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Super+p screenshots a region |
 | F5 | Optional `sartoria-games` (Steam on the dGPU) | installed on voyager (`sartoria-games` 0.0.1, i386, Super+g, Prime offload). "Sign in to Steam" still tiles |
-| F6 | Laptop LUKS on the installer ISO | in progress. Interactive LUKS2; unattended lab stays ext4. Not applied to voyager’s disk |
+| F6 | Laptop LUKS on the installer ISO | done 2026-09-25. VM install showed the Tokyo Night box, unlocked, and booted. Unattended `sartoria.auto=1` stayed ext4 with no `crypttab` (root `/dev/vda3`, `quiet nosplash`). Not applied to voyager’s disk |
 | F7 | Optional `sartoria-ai` (last) | not started |
 
 Not this gate: desktop dGPU, reverse-PRIME HDMI, `sartoria-nvidia` on the v0.1 ISO. `nvidia-persistenced` stays disabled.
@@ -270,9 +270,11 @@ The passphrase is separate from the login password (8 or more characters). GRUB 
 
 The passphrase screen is a Plymouth script theme (`config/plymouth/sartoria/`). Background `#1a1b26`, field `#414868`, text `#c0caf5`, border `#7aa2f7`. The label is “Passphrase”. A wrong passphrase prints the cryptsetup error under the box for a second, then the box is empty again. `scripts/build-iso.sh` installs `plymouth` and `plymouth-label` after elogind, sets the theme, and puts JetBrains Mono in the initramfs. The image default cmdline is `quiet nosplash`. A LUKS install writes `/etc/default/grub.d/sartoria-luks.cfg` with `quiet splash` before `update-grub`. The installer ISO entries also pass `nosplash` so the TUI stays visible. Plymouth’s init script is changed from `quit --retain-splash` to `quit`, because there is no display manager and a retained splash covers the tty login. If KMS never comes up, cryptsetup falls back to the text line.
 
-`scripts/build-iso.sh` installs `cryptsetup`, `cryptsetup-initramfs`, and `console-setup` into the image so the passphrase prompt can use the chosen keymap. Build it on this laptop with `./scripts/lab-build-iso.sh`. The output is `lab/iso/sartoria-0.0.1-amd64.iso`. The build chroot is not voyager's root disk. The current ISO does not have the box until that build is run again.
+`scripts/build-iso.sh` installs `cryptsetup`, `cryptsetup-initramfs`, and `console-setup` into the image so the passphrase prompt can use the chosen keymap. Build it on this laptop with `./scripts/lab-build-iso.sh`. The output is `lab/iso/sartoria-0.0.1-amd64.iso`. The build chroot is not voyager's root disk. The 2026-09-25 image includes the box.
 
-Exit F6: an encrypted install boots on a spare disk or VM, the initramfs accepts the passphrase, and the root is `/dev/mapper/sartoria_crypt`. The unattended install still has no `crypttab`. Do not point the installer at voyager’s current root until that boot has been proved.
+The finish box's OK runs `reboot -f`. A graceful reboot hangs on the live mounts. The old OK exited the installer, `installer-tty` printed "Installer stopped… LIVE ISO", and getty came up on the live system. Remove the USB or ISO only if that reboot comes back to the installer. Detaching it before OK faults the TUI, because the live system is still reading that medium.
+
+Exit F6 met 2026-09-25. A VM install showed the passphrase box, accepted the passphrase, and booted the installed system. The unattended install on that ISO had no `crypttab`, root `/dev/vda3`, and `quiet nosplash`. Voyager’s current disk stays unencrypted.
 
 ## Later
 

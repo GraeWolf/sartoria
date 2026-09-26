@@ -4,7 +4,7 @@ A personal opinionated Linux distribution. Devuan remix, own ISO, keyboard-first
 
 Sartoria is omakase: finished defaults, no account to install or boot. It is not Arch, not systemd, not Hyprland, not Wayland, and not a post-install gist.
 
-**Status:** Phase F on this G15 (F1 font done; F-suspend 0.0.9 boots `i8042.dumbkbd=1` so resume does not send the AT deactivate command, and still re-enumerates the USB keyboard; F2 Brave Origin installed; F3 LibreOffice from Excalibur; F4 done: Nautilus, screenshots, and Xft.dpi 144 on this panel; F5 Steam installed (Prime offload, Super+g; sign-in window still tiles); F6 LUKS is an installer question on the next ISO, not this disk). Phase E (hybrid Prime) is done. v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
+**Status:** Phase F on this G15 (F1 font done; F-suspend 0.0.9 boots `i8042.dumbkbd=1` so resume does not send the AT deactivate command, and still re-enumerates the USB keyboard; F2 Brave Origin installed; F3 LibreOffice from Excalibur; F4 done: Nautilus, screenshots, and Xft.dpi 144 on this panel; F5 Steam installed (Prime offload, Super+g; sign-in window still tiles); F6 done: LUKS is an installer question, proved on a VM, not this disk). Phase E (hybrid Prime) is done. v0.1 ISO remains Phase D. Desktop dGPU is a later follow-up.
 
 Canonical design: [`docs/DESIGN.md`](docs/DESIGN.md). Daily-use notes: [`MANUAL.md`](MANUAL.md).
 

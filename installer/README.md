@@ -12,7 +12,7 @@ v0.1 prompts:
 6. Explicit whole-disk wipe confirm (type YES)
 7. Install
 
-Offline ISO. Whole disk. After the disk is chosen, the TUI asks whether to encrypt the root with LUKS2. No keeps the v0.1 layout: BIOS boot, EFI, one ext4 root. Yes adds an unencrypted 1G `/boot` and a LUKS2 root. The EFI partition stays unencrypted. The passphrase is not the login password. GRUB loads the kernel from `/boot`, and the initramfs asks for the passphrase once, in a Tokyo Night Plymouth box. Ext4 installs pass `nosplash`, so Plymouth stays off. The installer ISO itself also boots with `nosplash` so the TUI is not covered.
+Offline ISO. Whole disk. When the copy finishes, OK reboots into the installed disk (`reboot -f`). The live ISO login is only for a failed install. After the disk is chosen, the TUI asks whether to encrypt the root with LUKS2. No keeps the v0.1 layout: BIOS boot, EFI, one ext4 root. Yes adds an unencrypted 1G `/boot` and a LUKS2 root. The EFI partition stays unencrypted. The passphrase is not the login password. GRUB loads the kernel from `/boot`, and the initramfs asks for the passphrase once, in a Tokyo Night Plymouth box. Ext4 installs pass `nosplash`, so Plymouth stays off. The installer ISO itself also boots with `nosplash` so the TUI is not covered.
 
 Unattended lab: boot the GRUB entry “Install Sartoria (unattended lab)” or pass `sartoria.auto=1`. Defaults: keymap `us`, hostname `sartoria`, user `sartoria` / password `sartoria`, wipe the first non-live disk, no LUKS. NVIDIA detect → skip proprietary install on the live ISO (iGPU/modesetting). After reboot, hybrid laptops install `sartoria-nvidia`.
 
