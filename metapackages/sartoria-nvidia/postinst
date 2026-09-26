@@ -56,6 +56,18 @@ if [ "$1" = configure ]; then
     ' /var/log/kern.log 2>/dev/null | sort -nr | head -40 > /var/log/sartoria-kern-excerpt.txt || true
     chmod 644 /var/log/sartoria-kern-excerpt.txt 2>/dev/null || true
   fi
-  echo "sartoria-nvidia: reboot required (S0ix on, i8042.dumbkbd=1). Do not close the lid until /proc/cmdline shows i8042.dumbkbd=1." >&2
+  # hid-asus starts asus::kbd_backlight at 0 and the brightness keys
+  # do not update it. Remember a lit level so the next resume can
+  # send it. Do not turn the LEDs on from postinst.
+  if [ ! -s /var/lib/sartoria/kbd-backlight ]; then
+    mkdir -p /var/lib/sartoria
+    printf '3\n' > /var/lib/sartoria/kbd-backlight
+    chmod 644 /var/lib/sartoria/kbd-backlight
+  fi
+  if grep -q 'i8042.dumbkbd=1' /proc/cmdline 2>/dev/null; then
+    echo "sartoria-nvidia: keyboard backlight is restored on the next wake. No reboot needed." >&2
+  else
+    echo "sartoria-nvidia: reboot required so i8042.dumbkbd=1 is on the kernel command line." >&2
+  fi
 fi
 exit 0

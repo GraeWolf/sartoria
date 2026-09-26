@@ -2,8 +2,10 @@
 # elogind sleep hook for this G15.
 # Do not write /proc/driver/nvidia/suspend (hung: fans, no s2idle).
 # After s2idle the ITE keyboard (0b05:19b6) often stays enumerated and
-# stops sending reports. Always re-enumerate it. That zeros
-# asus::kbd_backlight; the saved value is written back afterwards.
+# stops sending reports. Always re-enumerate it. That resets
+# asus::kbd_backlight to 0. The brightness keys do not update that
+# file (hid-asus only stores a level when sysfs is written), so a
+# pre-suspend read of 0 must not forget the last lit level.
 # Do not reset i8042. "echo reset" reconnects atkbd, which sends
 # ATKBD_CMD_RESET_DIS (0xF5). This EC logs "Failed to deactivate
 # keyboard on isa0060/serio0" and then stops responding until a hard
@@ -15,6 +17,7 @@ KBD_PRODUCT=19b6
 XHCI=0000:07:00.3
 LED=/sys/class/leds/asus::kbd_backlight/brightness
 SAVE=/run/sartoria-kbd-backlight
+PERSIST=/var/lib/sartoria/kbd-backlight
 
 log() {
   logger -t sartoria-nvidia -- "$@" 2>/dev/null || true
@@ -33,10 +36,37 @@ kbd_sysfs() {
   return 1
 }
 
+valid_level() {
+  case "$1" in
+    0|1|2|3) return 0 ;;
+  esac
+  return 1
+}
+
+# hid-asus reports 0 after probe and after the brightness keys, which
+# never write this sysfs file. Only 1–3 from sysfs update the saved
+# level. A stored 0 is how the lights stay off across suspend.
 save_backlight() {
-  if [ -r "$LED" ]; then
-    cat "$LED" > "$SAVE" 2>/dev/null || true
+  mkdir -p /var/lib/sartoria 2>/dev/null || true
+  val=3
+  if [ -s "$PERSIST" ]; then
+    val=$(cat "$PERSIST")
   fi
+  valid_level "$val" || val=3
+  if [ -r "$LED" ]; then
+    cur=$(cat "$LED")
+    case "$cur" in
+      1|2|3) val=$cur ;;
+    esac
+  fi
+  printf '%s\n' "$val" > "$PERSIST" 2>/dev/null || true
+  printf '%s\n' "$val" > "$SAVE" 2>/dev/null || true
+  chmod 644 "$PERSIST" "$SAVE" 2>/dev/null || true
+  log "kbd backlight save $val"
+}
+
+apply_backlight() {
+  echo "$1" > "$LED" 2>/dev/null || true
 }
 
 restore_backlight() {
@@ -46,19 +76,27 @@ restore_backlight() {
     n=$((n + 1))
   done
   val=3
+  if [ -s "$PERSIST" ]; then
+    val=$(cat "$PERSIST")
+  fi
   if [ -s "$SAVE" ]; then
     val=$(cat "$SAVE")
   fi
-  case "$val" in
-    0|1|2|3) ;;
-    *) val=3 ;;
-  esac
-  if [ -w "$LED" ]; then
-    echo "$val" > "$LED" 2>/dev/null || true
-    log "kbd backlight -> $val"
-  else
+  valid_level "$val" || val=3
+  if [ ! -w "$LED" ]; then
     log "kbd backlight node missing; left unrestored"
+    return 0
   fi
+  # Probe leaves the software level at 0. Wait until the new HID
+  # device accepts the report, then write twice. The second write
+  # still runs brightness_set because we step away and back.
+  sleep 1
+  if [ "$val" != 0 ]; then
+    apply_backlight 0
+    sleep 1
+  fi
+  apply_backlight "$val"
+  log "kbd backlight -> $val"
 }
 
 reset_xhci() {

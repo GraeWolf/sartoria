@@ -3,7 +3,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "$0")" && pwd)/lab-common.sh"
 
-VERSION="${SARTORIA_NVIDIA_VERSION:-0.0.9}"
+VERSION="${SARTORIA_NVIDIA_VERSION:-0.0.10}"
 PKG=sartoria-nvidia
 STAGE="$CACHE/deb-stage/${PKG}"
 OUTDIR="${OUTDIR:-$CACHE}"

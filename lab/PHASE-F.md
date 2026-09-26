@@ -9,7 +9,7 @@ Do **not** LUKS voyager’s current disk first. Firefox ESR can stay until Origi
 | Id | Item | Status |
 | --- | --- | --- |
 | F1 | Alacritty / Nerd Font actually installed; monospace, not DejaVu Sans | done (`sartoria-desktop` 0.0.3 on voyager) |
-| F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.9 passed one lid cycle on 2026-09-24 03:40 (keys work, hook re-enumerated `1-3`, backlight restored to 3). AC-plug spam is the Samsung NVMe AER, still open |
+| F-suspend | Lid/s2idle resume: keyboard works; no persistenced boot failure; MM off the login tty | 0.0.9 keys passed one lid cycle. Later wakes logged `kbd backlight -> 0` because hid-asus reports 0. 0.0.10 restores the last level 1–3 (default 3). AC-plug spam is the Samsung NVMe AER, still open |
 | F2 | Brave Origin (pinned Brave apt repo, `brave-origin`) | installed on voyager (`brave-origin` 1.95.104; `brave-browser` pinned to -1) |
 | F3 | LibreOffice from Excalibur + floating dialog rules | done (`sartoria-office` 0.0.1, Excalibur 25.2.3, gtk3; Writer tiles, File → Open floats) |
 | F4 | File manager, screenshots, laptop DPI | done (`sartoria-desktop` 0.0.7, `sartoria-daily` 0.0.1). Nautilus tiles (`org.gnome.Nautilus`, floating off). `Xft.dpi` is 144. `hyprland` pin -1. Super+p screenshots a region |
@@ -167,6 +167,13 @@ After reboot, before a lid test: `grep dumbkbd /proc/cmdline`. If the login keyb
 2026-09-24 03:40, one lid cycle on 0.0.9 with `i8042.dumbkbd=1`: the machine slept, woke, and the keyboard worked. `/var/log/sartoria-sleep.log` shows `re-enumerate ASUS keyboard 1-3` and `kbd backlight -> 3`. AT keyboard, USB keyboard, and the touchpad were all present afterward. No `Failed to deactivate` on that resume.
 
 The AC-plug console flood is the Samsung NVMe `144d:a80a` at `0000:02:00.0` (bridge `00:01.2`): `pcieport 0000:00:01.2: AER: Multiple Correctable error message received from 0000:02:00.0`, from 02:39 through the tty switch at 02:53. Not the keyboard. Left as-is for this pass.
+
+Backlight stayed off on later wakes. `/var/log/sartoria-sleep.log` shows `kbd backlight -> 0` on 2026-09-25 17:29 and 2026-09-26 08:44. hid-asus initialises `asus::kbd_backlight` to 0, and the brightness keys never write that file, so pre-suspend saved 0 and post wrote 0. 0.0.10 keeps the last level of 1–3 in `/var/lib/sartoria/kbd-backlight` (default 3) and writes it after the keyboard is back. A stored 0 is the off setting. No reboot if `i8042.dumbkbd=1` is already on the command line.
+
+```bash
+./scripts/build-sartoria-nvidia.sh
+sudo apt-get install ./lab/cache/sartoria-nvidia_0.0.10_all.deb
+```
 
 ## F2 — Brave Origin
 
